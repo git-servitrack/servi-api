@@ -33,7 +33,12 @@ const handleMongooseError = (err: unknown): AppError => {
   }
 
   if (isMongoServerError(err)) {
-    return new AppError(error.message || "Database operation failed", 400, true, "MONGO_SERVER_ERROR");
+    return new AppError(
+      error.message || "Database operation failed",
+      400,
+      true,
+      "MONGO_SERVER_ERROR",
+    );
   }
 
   return new AppError("Database error", 500, false, "DATABASE_ERROR");
@@ -62,11 +67,24 @@ export const notFound = (_req: Request, _res: Response, next: NextFunction): voi
   next(new NotFoundError("Route not found", "ROUTE_NOT_FOUND"));
 };
 
-export const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction): void => {
+export const errorHandler = (
+  err: unknown,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+
   const appError = err instanceof AppError ? err : handleMongooseError(err);
   logError(appError, req);
 
-  const message = !appError.isOperational && env.NODE_ENV === "production" ? "Internal server error" : appError.message;
+  const message =
+    !appError.isOperational && env.NODE_ENV === "production"
+      ? "Internal server error"
+      : appError.message;
   const meta =
     env.NODE_ENV === "production"
       ? appError.code

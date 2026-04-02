@@ -4,15 +4,23 @@ export function UseMiddleware(middleware: any) {
 
     descriptor.value = function (...args: any[]) {
       const [req, res, next] = args;
-      return new Promise((resolve, reject) => {
-        middleware(req, res, (err: any) => {
+      return new Promise((resolve) => {
+        let handled = false;
+
+        const done = (err?: any) => {
+          if (handled) return;
+          handled = true;
+
           if (err) {
             next(err);
-            reject(err);
+            resolve(undefined);
             return;
           }
-          resolve(originalMethod.apply(this, args));
-        });
+
+          Promise.resolve(originalMethod.apply(this, args)).then(resolve).catch(next);
+        };
+
+        middleware(req, res, done);
       });
     };
 

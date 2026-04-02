@@ -31,3 +31,15 @@ export class ConflictError extends AppError {
     super(message, httpStatus.CONFLICT, true, code);
   }
 }
+
+export class UnauthorizedError extends AppError {
+  constructor(message = "Unauthorized", code?: string) {
+    super(message, httpStatus.UNAUTHORIZED, true, code);
+  }
+}
+
+export class ForbiddenError extends AppError {
+  constructor(message = "Forbidden", code?: string) {
+    super(message, httpStatus.FORBIDDEN, true, code);
+  }
+}

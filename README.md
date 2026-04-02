@@ -44,6 +44,10 @@ API_VERSION=v1
 MONGO_URI=mongodb://localhost:27017/servi-api
 CORS_ORIGIN=*
 LOG_LEVEL=info
+ACCESS_TOKEN_SECRET=dev_access_token_secret_please_change
+REFRESH_TOKEN_SECRET=dev_refresh_token_secret_please_change
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_IN=7d
 
 # Optional (only needed if Cloudinary features are used)
 CLOUDINARY_CLOUD_NAME=
@@ -55,6 +59,7 @@ Notes:
 
 - `MONGO_URI` is required.
 - API base path resolves to `API_PREFIX/API_VERSION` (default: `/api/v1`).
+- Use strong values for token secrets outside development.
 
 ## Scripts
 
@@ -80,6 +85,9 @@ Notes:
 - `DELETE /api/v1/user/`
 - `POST /api/v1/user/search`
 - `POST /api/v1/user/upload-image/:id`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
 
 ## Project Structure
 

@@ -1,4 +1,5 @@
 import { FilterQuery } from "mongoose";
+import bcrypt from "bcryptjs";
 import { ParsedQueryOptions } from "../helpers/queryBuilder";
 import { AppError } from "../middleware/errorHandler";
 import { UserModel } from "../models/userModel";
@@ -23,15 +24,23 @@ export class UserService {
   }
 
   async createUser(userData: Partial<UserModel>): Promise<UserModel> {
-    // *You can add hashing here to hash the password of the user. Feel free to modify base on your needs.
     const existingUser = await this.userRepository.searchAndUpdate({ email: userData.email });
     if (existingUser) throw new AppError("User already exists", 400);
-    
-    return this.userRepository.createUser(userData);
+
+    if (!userData.password) throw new AppError("Password is required", 400);
+    userData.password = await bcrypt.hash(userData.password, 10);
+
+    const createdUser = await this.userRepository.createUser(userData);
+    const safeUser = await this.userRepository.getUser(createdUser._id.toString());
+    return safeUser as UserModel;
   }
 
   async updateUser(updateData: Partial<UserModel>): Promise<UserModel | null> {
     if (!updateData._id) throw new AppError("User ID is required", 400);
+
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
 
     const user = await this.userRepository.updateUser(updateData._id, updateData);
     if (!user) throw new AppError("User not found", 404);

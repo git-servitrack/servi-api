@@ -40,16 +40,16 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### User and Access Base
 
-- [ ] Define user model
-- [ ] Define role model or role enum strategy
-- [ ] Implement user repository
-- [ ] Implement user service
-- [ ] Implement auth controller
-- [ ] Implement auth routes
-- [ ] Add password hashing
-- [ ] Add login flow
-- [ ] Add access token strategy
-- [ ] Add role-based middleware foundation
+- [x] Define user model
+- [x] Define role model or role enum strategy
+- [x] Implement user repository
+- [x] Implement user service
+- [x] Implement auth controller
+- [x] Implement auth routes
+- [x] Add password hashing
+- [x] Add login flow
+- [x] Add access token strategy
+- [x] Add role-based middleware foundation
 
 > Note: Full authorization granularity can expand later, but the base identity layer should be established early.
 
