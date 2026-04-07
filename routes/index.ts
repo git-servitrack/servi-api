@@ -3,6 +3,7 @@ import { extract } from "express-extract-routes";
 import { UserController } from "../controllers/userController";
 import { HealthController } from "../controllers/healthController";
 import { AuthController } from "../controllers/authController";
+import { AssetController } from "../controllers/assetController";
 
 // Extract all routes from the controllers.
-export const routes = extract(UserController, HealthController, AuthController);
+export const routes = extract(UserController, HealthController, AuthController, AssetController);
