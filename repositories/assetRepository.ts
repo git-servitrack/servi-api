@@ -2,6 +2,7 @@ import { Asset, AssetModel } from "../models/assetModel";
 import { FilterQuery, UpdateQuery } from "mongoose";
 import { ParsedQueryOptions } from "../helpers/queryBuilder";
 import { sanitizeSelect } from "../helpers/common";
+import { CreateAssetRequest, UpdateAssetRequest } from "../types/asset";
 
 // Purpose: This file is responsible for handling all the database operations related to the asset model.
 export class AssetRepository {
@@ -16,8 +17,8 @@ export class AssetRepository {
     }
 
     if (options?.populate && options.populate.length > 0) {
-      options.populate.forEach((path) => {
-        query = query.populate(path);
+      options.populate.forEach((instruction) => {
+        query = query.populate(instruction as any);
       });
     }
 
@@ -39,19 +40,19 @@ export class AssetRepository {
     if (options?.limit) query = query.limit(options.limit);
 
     if (options?.populate && options.populate.length > 0) {
-      options.populate.forEach((path) => {
-        query = query.populate(path);
+      options.populate.forEach((instruction) => {
+        query = query.populate(instruction as any);
       });
     }
 
     return query.exec();
   }
 
-  async createAsset(data: AssetModel): Promise<AssetModel> {
+  async createAsset(data: CreateAssetRequest): Promise<AssetModel> {
     return Asset.create(data);
   }
 
-  async updateAsset(id: string, data: Partial<AssetModel>): Promise<AssetModel | null> {
+  async updateAsset(id: string, data: Partial<UpdateAssetRequest>): Promise<AssetModel | null> {
     return Asset.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 

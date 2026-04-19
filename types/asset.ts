@@ -1,4 +1,12 @@
+import mongoose from "mongoose";
 import { z } from "zod";
+
+const objectIdSchema = z
+  .string()
+  .min(1, "Object ID is required")
+  .refine((value) => mongoose.Types.ObjectId.isValid(value), {
+    message: "Invalid ObjectId",
+  });
 
 const assetStatusEnum = z.enum([
   "Operational",
@@ -13,7 +21,7 @@ export const createAssetSchema = z.object({
   body: z.object({
     name: z.string().min(1),
     code: z.string().min(1).optional(),
-    category: z.string().min(1),
+    category: objectIdSchema,
     site: z.string().min(1),
     assignedTeam: z.string().min(1),
     status: z.enum(["Operational", "Maintenance Due", "Under Repair", "Decommissioned"]),
@@ -36,7 +44,7 @@ export const updateAssetSchema = z.object({
       _id: z.string().min(1, "Asset ID is required"),
       name: z.string().min(1).optional(),
       code: z.string().min(1).optional(),
-      category: z.string().min(1).optional(),
+      category: objectIdSchema.optional(),
       site: z.string().min(1).optional(),
       assignedTeam: z.string().min(1).optional(),
       status: assetStatusEnum.optional(),
