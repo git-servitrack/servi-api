@@ -16,8 +16,8 @@ export class UserRepository {
     }
 
     if (options?.populate && options.populate.length > 0) {
-      options.populate.forEach((path) => {
-        query = query.populate(path);
+      options.populate.forEach((instruction) => {
+        query = query.populate(instruction as any);
       });
     }
 
@@ -39,8 +39,8 @@ export class UserRepository {
     if (options?.limit) query = query.limit(options.limit);
 
     if (options?.populate && options.populate.length > 0) {
-      options.populate.forEach((path) => {
-        query = query.populate(path);
+      options.populate.forEach((instruction) => {
+        query = query.populate(instruction as any);
       });
     }
 

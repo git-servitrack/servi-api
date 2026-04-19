@@ -59,24 +59,22 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Asset Module
 
-- [ ] Create asset schema
-- [ ] Define asset categories
-- [ ] Define asset status enum
-- [ ] Create asset repository
-- [ ] Create asset service
-- [ ] Create asset controller
-- [ ] Create asset routes
-- [ ] Implement create asset endpoint
-- [ ] Implement list assets endpoint
-- [ ] Implement get asset details endpoint
-- [ ] Implement update asset endpoint
-- [ ] Implement asset status update endpoint
+- [x] Create asset schema
+- [x] Define asset categories
+- [x] Define asset status enum
+- [x] Create asset repository
+- [x] Create asset service
+- [x] Create asset controller
+- [x] Create asset routes
+- [x] Implement create asset endpoint
+- [x] Implement list assets endpoint
+- [x] Implement get asset details endpoint
+- [x] Implement update asset endpoint
 
 ### Asset Enhancements
 
-- [ ] Add asset code generation rule
-- [ ] Add asset filtering and pagination
-- [ ] Add maintenance history relation lookup
+- [x] Add asset code generation rule
+- [x] Add asset filtering and pagination
 
 ---
 

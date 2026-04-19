@@ -4,14 +4,17 @@ import { ParsedQueryOptions } from "../helpers/queryBuilder";
 import { AppError } from "../middleware/errorHandler";
 import { AssetModel } from "../models/assetModel";
 import { AssetRepository } from "../repositories/assetRepository";
-import { CreateAssetRequest } from "../types/asset";
+import { CategoryRepository } from "../repositories/categoryRepository";
+import { CreateAssetRequest, UpdateAssetRequest } from "../types/asset";
 
 // *Purpose: This service class is responsible for handling the business logic of the asset entity. It interacts with the asset repository to perform CRUD operations on the asset entity.
 export class AssetService {
   private assetRepository: AssetRepository;
+  private categoryRepository: CategoryRepository;
 
   constructor() {
     this.assetRepository = new AssetRepository();
+    this.categoryRepository = new CategoryRepository();
   }
 
   async getAsset(id: string, options?: ParsedQueryOptions): Promise<AssetModel | null> {
@@ -25,6 +28,9 @@ export class AssetService {
   }
 
   async createAsset(data: CreateAssetRequest): Promise<AssetModel> {
+    const category = await this.categoryRepository.findActiveCategoryById(data.category);
+    if (!category) throw new AppError("Category not found or inactive", 400);
+
     const provideCode = data.code?.trim();
 
     let finalCode: string;
@@ -40,11 +46,18 @@ export class AssetService {
         throw new AppError("Unable to generate unique asset code", 500);
       }
     }
+
     return await this.assetRepository.createAsset({ ...data, code: finalCode });
   }
 
-  async updateAsset(data: Partial<AssetModel>): Promise<AssetModel | null> {
+  async updateAsset(
+    data: Partial<UpdateAssetRequest> & { _id: string },
+  ): Promise<AssetModel | null> {
     if (!data._id) throw new AppError("Asset ID is required", 400);
+
+    if (data.category) {
+      await this.categoryRepository.findActiveCategoryById(data.category);
+    }
 
     const asset = await this.assetRepository.updateAsset(data._id, data);
     if (!asset) throw new AppError("Asset not found", 404);

@@ -1,10 +1,10 @@
-import mongoose, { HydratedDocument } from "mongoose";
+import mongoose from "mongoose";
 
 export interface AssetModel {
   _id?: string;
   name: string;
   code?: string;
-  category: string;
+  category: mongoose.Schema.Types.ObjectId | string;
   site: string;
   assignedTeam: string;
   status: "Operational" | "Maintenance Due" | "Under Repair" | "Decommissioned";
@@ -29,7 +29,8 @@ const AssetSchema = new mongoose.Schema<AssetModel>(
       unique: true,
     },
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
       required: true,
     },
     site: {
