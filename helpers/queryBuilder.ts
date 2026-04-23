@@ -23,7 +23,7 @@ export interface ParsedQueryOptions {
 export class QueryBuilder {
   static parse<T extends Document>(
     options: QueryOptions,
-    defaultLimit: number = 10,
+    defaultLimit = 10,
   ): ParsedQueryOptions {
     const fieldOptions = this.parseFields(options.fields);
 
