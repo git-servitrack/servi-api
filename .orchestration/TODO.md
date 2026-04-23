@@ -82,30 +82,23 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Service Request Module
 
-- [ ] Create service request schema
-- [ ] Define request priorities
-- [ ] Define request statuses
-- [ ] Create request number generator
-- [ ] Create service request repository
-- [ ] Create service request service
-- [ ] Create service request controller
-- [ ] Create service request routes
+- [x] Create service request schema
+- [x] Define request priorities
+- [x] Define request statuses
+- [x] Create service request repository
+- [x] Create service request service
+- [x] Create service request controller
+- [x] Create service request routes
 
 ### Core Endpoints
 
-- [ ] Create service request
-- [ ] List service requests
-- [ ] Get service request by ID
-- [ ] Update service request details
-- [ ] Update request status
-- [ ] Add request remarks
-- [ ] Attach request to asset
-
-### Workflow Controls
-
-- [ ] Enforce valid request status transitions
-- [ ] Record request status history
-- [ ] Add priority-based sorting
+- [x] Create service request
+- [x] List service requests
+- [x] Get service request by ID
+- [x] Update service request details
+- [x] Update request status
+- [x] Add request remarks
+- [x] Attach request to asset
 
 ---
 
