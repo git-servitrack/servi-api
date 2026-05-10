@@ -106,30 +106,30 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Maintenance Module
 
-- [ ] Create maintenance job schema
-- [ ] Create maintenance log schema
-- [ ] Create repair action structure
-- [ ] Create maintenance repository
-- [ ] Create maintenance service
-- [ ] Create maintenance controller
-- [ ] Create maintenance routes
+- [x] Create maintenance job schema
+- [x] Create maintenance log schema
+- [x] Create repair action structure
+- [x] Create maintenance repository
+- [x] Create maintenance service
+- [x] Create maintenance controller
+- [x] Create maintenance routes
 
 ### Core Endpoints
 
-- [ ] Open maintenance job from request
-- [ ] Assign technician to maintenance job
-- [ ] Start maintenance job
-- [ ] Add diagnosis notes
-- [ ] Add repair action log
-- [ ] Put job on hold
-- [ ] Complete maintenance job
-- [ ] View maintenance history
+- [x] Open maintenance job from request
+- [x] Assign technician to maintenance job
+- [x] Start maintenance job
+- [x] Add diagnosis notes
+- [x] Add repair action log
+- [x] Put job on hold
+- [x] Complete maintenance job
+- [x] View maintenance history
 
 ### Workflow Controls
 
-- [ ] Enforce valid maintenance status transitions
-- [ ] Record technician activity history
-- [ ] Require completion data before closure
+- [x] Enforce valid maintenance status transitions
+- [x] Record technician activity history
+- [x] Require completion data before closure
 
 ---
 
