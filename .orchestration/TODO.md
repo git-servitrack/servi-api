@@ -106,51 +106,50 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Maintenance Module
 
-- [ ] Create maintenance job schema
-- [ ] Create maintenance log schema
-- [ ] Create repair action structure
-- [ ] Create maintenance repository
-- [ ] Create maintenance service
-- [ ] Create maintenance controller
-- [ ] Create maintenance routes
+- [x] Create maintenance job schema
+- [x] Create maintenance log schema
+- [x] Create repair action structure
+- [x] Create maintenance repository
+- [x] Create maintenance service
+- [x] Create maintenance controller
+- [x] Create maintenance routes
 
 ### Core Endpoints
 
-- [ ] Open maintenance job from request
-- [ ] Assign technician to maintenance job
-- [ ] Start maintenance job
-- [ ] Add diagnosis notes
-- [ ] Add repair action log
-- [ ] Put job on hold
-- [ ] Complete maintenance job
-- [ ] View maintenance history
+- [x] Open maintenance job from request
+- [x] Assign technician to maintenance job
+- [x] Start maintenance job
+- [x] Add diagnosis notes
+- [x] Add repair action log
+- [x] Put job on hold
+- [x] Complete maintenance job
+- [x] View maintenance history
 
 ### Workflow Controls
 
-- [ ] Enforce valid maintenance status transitions
-- [ ] Record technician activity history
-- [ ] Require completion data before closure
+- [x] Enforce valid maintenance status transitions
+- [x] Record technician activity history
+- [x] Require completion data before closure
 
 ---
 
-## PHASE 6 - Technician Domain
+## PHASE 6 - Technician Operations Views
 
-### Technician Module
+### Technician User Strategy
 
-- [ ] Create technician schema
-- [ ] Create technician repository
-- [ ] Create technician service
-- [ ] Create technician controller
-- [ ] Create technician routes
+- [x] Use User model with technician role
+- [x] Reuse user list filtering for technician listing
+- [x] Reuse maintenance assignment workflow for technician assignment
 
-### Core Endpoints
+### Core Views
 
-- [ ] Register technician
-- [ ] Update technician profile
-- [ ] Assign technician
 - [ ] List technician workloads
-- [ ] View technician maintenance history
+- [x] View technician maintenance history
 - [ ] Generate technician scorecard summary
+
+> Note: A separate technician module is not needed yet because technicians are users with role `technician`.
+> Use existing user filtering, for example `GET /user?filter=role:technician`, instead of creating a duplicate endpoint.
+> Create a separate technician profile model only when technician-specific fields are needed, such as certifications, skills, availability, or employment metadata.
 
 ---
 

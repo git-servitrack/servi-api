@@ -3,7 +3,6 @@ import { ParsedQueryOptions } from "../helpers/queryBuilder";
 import { AppError } from "../middleware/errorHandler";
 import { ServiceRequestModel } from "../models/serviceRequestModel";
 import { AssetRepository } from "../repositories/assetRepository";
-import { CategoryRepository } from "../repositories/categoryRepository";
 import { ServiceRequestRepository } from "../repositories/serviceRequestRepository";
 import { UserRepository } from "../repositories/userRepository";
 import { CreateServiceRequest, UpdateServiceRequest } from "../types/serviceRequest";
@@ -11,13 +10,11 @@ import { CreateServiceRequest, UpdateServiceRequest } from "../types/serviceRequ
 // *Purpose: This service class is responsible for handling the business logic of the service request entity. It interacts with the service request repository to perform CRUD operations on the service request entity.
 export class ServiceRequestService {
   private serviceRequestRepository: ServiceRequestRepository;
-  private categoryRepository: CategoryRepository;
   private userRepository: UserRepository;
   private assetRepository: AssetRepository;
 
   constructor() {
     this.serviceRequestRepository = new ServiceRequestRepository();
-    this.categoryRepository = new CategoryRepository();
     this.userRepository = new UserRepository();
     this.assetRepository = new AssetRepository();
   }
