@@ -157,30 +157,30 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Spare Parts Module
 
-- [ ] Create spare part schema
-- [ ] Create stock movement schema
-- [ ] Create part usage schema
-- [ ] Create spare parts repository
-- [ ] Create spare parts service
-- [ ] Create spare parts controller
-- [ ] Create spare parts routes
+- [x] Create spare part schema
+- [x] Create stock movement schema
+- [x] Create part usage schema
+- [x] Create spare parts repository
+- [x] Create spare parts service
+- [x] Create spare parts controller
+- [x] Create spare parts routes
 
 ### Core Endpoints
 
-- [ ] Register spare part
-- [ ] Update spare part details
-- [ ] Add stock
-- [ ] Deduct stock
-- [ ] Reserve part for maintenance
-- [ ] Record part usage for maintenance job
-- [ ] View stock movement history
-- [ ] View low-stock items
+- [x] Register spare part
+- [x] Update spare part details
+- [x] Add stock
+- [x] Deduct stock
+- [x] Reserve part for maintenance
+- [x] Record part usage for maintenance job
+- [x] View stock movement history
+- [x] View low-stock items
 
 ### Controls
 
-- [ ] Prevent invalid negative stock
-- [ ] Track all stock movements
-- [ ] Link usage to maintenance jobs
+- [x] Prevent invalid negative stock
+- [x] Track all stock movements
+- [x] Link usage to maintenance jobs
 
 ---
 
