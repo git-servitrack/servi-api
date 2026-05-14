@@ -17,7 +17,9 @@ import {
   openMaintenanceFromRequestSchema,
   repairActionLogSchema,
   startMaintenanceSchema,
+  technicianScorecardSummarySchema,
   technicianMaintenanceHistorySchema,
+  technicianWorkloadSchema,
   updateMaintenanceSchema,
 } from "../types/maintenance";
 
@@ -101,6 +103,48 @@ export class MaintenanceController {
         parsedOptions,
       );
       sendSuccess(res, "Technician maintenance history fetched successfully", maintenance);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  @route.get("/technicians/workloads")
+  @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(validate(technicianWorkloadSchema))
+  async getTechnicianWorkloads(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const queryOptions: QueryOptions = {
+        fields: req.query.fields as string,
+        limit: req.query.limit as unknown as number,
+        sort: req.query.sort as string,
+        order: req.query.order as "asc" | "desc",
+        filter: req.query.filter as string,
+        populate: req.query.populate as string,
+      };
+      const parsedOptions = QueryBuilder.parse(queryOptions);
+      const workloads = await this.maintenanceService.getTechnicianWorkloads(parsedOptions);
+      sendSuccess(res, "Technician workloads fetched successfully", workloads);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  @route.get("/technicians/:technicianId/scorecard")
+  @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(validate(technicianScorecardSummarySchema))
+  async getTechnicianScorecardSummary(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const scorecard = await this.maintenanceService.getTechnicianScorecardSummary(
+        req.params.technicianId,
+        req.query,
+      );
+      sendSuccess(res, "Technician scorecard summary fetched successfully", scorecard);
     } catch (error) {
       next(error);
     }
