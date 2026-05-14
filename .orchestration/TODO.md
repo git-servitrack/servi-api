@@ -143,9 +143,9 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Core Views
 
-- [ ] List technician workloads
+- [x] List technician workloads
 - [x] View technician maintenance history
-- [ ] Generate technician scorecard summary
+- [x] Generate technician scorecard summary
 
 > Note: A separate technician module is not needed yet because technicians are users with role `technician`.
 > Use existing user filtering, for example `GET /user?filter=role:technician`, instead of creating a duplicate endpoint.

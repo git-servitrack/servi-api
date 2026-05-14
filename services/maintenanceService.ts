@@ -13,10 +13,16 @@ import {
   CreateMaintenanceRequest,
   DiagnosisNotesRequest,
   HoldMaintenanceRequest,
+  MaintenanceStatusCount,
+  MaintenanceStatusValue,
   OpenMaintenanceFromRequest,
   RepairActionLogRequest,
   StartMaintenanceRequest,
+  TechnicianScorecardSummary,
+  TechnicianScorecardSummaryQuery,
+  TechnicianWorkloadSummary,
   UpdateMaintenanceRequest,
+  maintenanceStatuses,
 } from "../types/maintenance";
 
 type MaintenanceStatus = MaintenanceModel["status"];
@@ -67,6 +73,47 @@ export class MaintenanceService {
       actor,
       createdAt: new Date(),
     };
+  }
+
+  private serializeDocument(document: unknown): Record<string, unknown> {
+    const record = document as { toObject?: () => Record<string, unknown> };
+    if (typeof record.toObject === "function") return record.toObject();
+    return document as Record<string, unknown>;
+  }
+
+  private buildStatusBreakdown(counts: MaintenanceStatusCount[] = []): MaintenanceStatusCount[] {
+    const countsByStatus = new Map<MaintenanceStatusValue, number>();
+    maintenanceStatuses.forEach((status) => countsByStatus.set(status, 0));
+
+    counts.forEach((count) => {
+      countsByStatus.set(count.status, count.count);
+    });
+
+    return maintenanceStatuses.map((status) => ({
+      status,
+      count: countsByStatus.get(status) || 0,
+    }));
+  }
+
+  private getActiveJobCount(statusBreakdown: MaintenanceStatusCount[]): number {
+    return statusBreakdown
+      .filter((statusCount) => statusCount.status !== "Completed")
+      .reduce((total, statusCount) => total + statusCount.count, 0);
+  }
+
+  private calculateRate(count: number, total: number): number {
+    if (total === 0) return 0;
+    return Number(((count / total) * 100).toFixed(2));
+  }
+
+  private async getTechnicianOrFail(technicianId: string): Promise<Record<string, unknown>> {
+    const technician = await this.userRepository.searchUser({
+      _id: technicianId,
+      role: "technician",
+    });
+
+    if (!technician) throw new AppError("Technician not found", 404);
+    return this.serializeDocument(technician);
   }
 
   async getMaintenance(id: string, options?: ParsedQueryOptions): Promise<MaintenanceModel | null> {
@@ -348,6 +395,8 @@ export class MaintenanceService {
     technicianId: string,
     options?: ParsedQueryOptions,
   ): Promise<MaintenanceModel[]> {
+    await this.getTechnicianOrFail(technicianId);
+
     return this.maintenanceRepository.getMaintenances({
       ...options,
       filter: {
@@ -355,6 +404,115 @@ export class MaintenanceService {
         "assignment.technician": technicianId,
       },
     } as ParsedQueryOptions);
+  }
+
+  async getTechnicianWorkloads(options?: ParsedQueryOptions): Promise<TechnicianWorkloadSummary[]> {
+    const technicianOptions = {
+      ...options,
+      select:
+        options?.select && options.select !== "_id"
+          ? options.select
+          : "username firstName lastName middleName email avatar role",
+      filter: {
+        ...(options?.filter || {}),
+        role: "technician",
+      },
+    } as ParsedQueryOptions;
+
+    const technicians = await this.userRepository.getUsers(technicianOptions);
+    const technicianIds = technicians.map((technician) => String(technician._id));
+    const workloads = await this.maintenanceRepository.getTechnicianStatusCounts(technicianIds);
+    const workloadsByTechnician = new Map(
+      workloads.map((workload) => [workload.technician, workload]),
+    );
+
+    return technicians.map((technician) => {
+      const technicianId = String(technician._id);
+      const workload = workloadsByTechnician.get(technicianId);
+      const statusBreakdown = this.buildStatusBreakdown(workload?.counts);
+      const completedJobs =
+        statusBreakdown.find((statusCount) => statusCount.status === "Completed")?.count || 0;
+
+      return {
+        technician: this.serializeDocument(technician),
+        totalJobs: workload?.total || 0,
+        activeJobs: this.getActiveJobCount(statusBreakdown),
+        completedJobs,
+        statusBreakdown,
+      };
+    });
+  }
+
+  async getTechnicianScorecardSummary(
+    technicianId: string,
+    query: TechnicianScorecardSummaryQuery,
+  ): Promise<TechnicianScorecardSummary> {
+    const technician = await this.getTechnicianOrFail(technicianId);
+    const fromDate = query.from ? new Date(query.from) : undefined;
+    const toDate = query.to ? new Date(query.to) : undefined;
+
+    if (fromDate && toDate && fromDate > toDate) {
+      throw new AppError("Scorecard from date cannot be later than to date", 400);
+    }
+
+    const filter: FilterQuery<MaintenanceModel> & {
+      createdAt?: { $gte?: Date; $lte?: Date };
+    } = {
+      "assignment.technician": technicianId,
+    };
+
+    if (fromDate || toDate) {
+      filter.createdAt = {};
+      if (fromDate) filter.createdAt.$gte = fromDate;
+      if (toDate) filter.createdAt.$lte = toDate;
+    }
+
+    const jobs = await this.maintenanceRepository.getMaintenancesByFilter(filter);
+    const statusCounts = jobs.reduce<MaintenanceStatusCount[]>((counts, job) => {
+      const existingCount = counts.find((count) => count.status === job.status);
+      if (existingCount) {
+        existingCount.count += 1;
+        return counts;
+      }
+
+      counts.push({ status: job.status, count: 1 });
+      return counts;
+    }, []);
+
+    const statusBreakdown = this.buildStatusBreakdown(statusCounts);
+    const totalJobs = jobs.length;
+    const completedJobs =
+      statusBreakdown.find((statusCount) => statusCount.status === "Completed")?.count || 0;
+    const activeJobs = this.getActiveJobCount(statusBreakdown);
+    const repairActions = jobs.reduce((total, job) => total + job.repairActions.length, 0);
+    const completedRepairActions = jobs.reduce(
+      (total, job) =>
+        total + job.repairActions.filter((repairAction) => repairAction.status === "Done").length,
+      0,
+    );
+    const lastCompletedAt = jobs.reduce<Date | null>((latestDate, job) => {
+      const completedAt = job.completion?.completedAt || null;
+      if (!completedAt) return latestDate;
+      if (!latestDate || completedAt > latestDate) return completedAt;
+      return latestDate;
+    }, null);
+
+    return {
+      technician,
+      dateRange: {
+        from: query.from,
+        to: query.to,
+      },
+      totalJobs,
+      activeJobs,
+      completedJobs,
+      completionRate: this.calculateRate(completedJobs, totalJobs),
+      repairActions,
+      completedRepairActions,
+      repairActionCompletionRate: this.calculateRate(completedRepairActions, repairActions),
+      lastCompletedAt,
+      statusBreakdown,
+    };
   }
 
   async deleteMaintenance(id: string): Promise<MaintenanceModel | null> {

@@ -8,7 +8,7 @@ const objectIdSchema = z
     message: "Invalid ObjectId",
   });
 
-const maintenanceStatusEnum = z.enum([
+export const maintenanceStatuses = [
   "Assigned",
   "Diagnosing",
   "Awaiting Parts",
@@ -16,7 +16,9 @@ const maintenanceStatusEnum = z.enum([
   "On Hold",
   "Ready for QA",
   "Completed",
-]);
+] as const;
+
+const maintenanceStatusEnum = z.enum(maintenanceStatuses);
 
 const repairActionStatusEnum = z.enum(["Pending", "In Progress", "Done"]);
 
@@ -188,6 +190,27 @@ export const technicianMaintenanceHistorySchema = z.object({
   query: maintenanceHistorySchema.shape.query,
 });
 
+const dateStringSchema = z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
+  message: "Invalid date",
+});
+
+export const technicianWorkloadSchema = z.object({
+  body: z.object({}),
+  params: z.object({}),
+  query: maintenanceHistorySchema.shape.query,
+});
+
+export const technicianScorecardSummarySchema = z.object({
+  body: z.object({}),
+  params: z.object({
+    technicianId: objectIdSchema,
+  }),
+  query: z.object({
+    from: dateStringSchema.optional(),
+    to: dateStringSchema.optional(),
+  }),
+});
+
 export type CreateMaintenanceRequest = z.infer<typeof createMaintenanceSchema>["body"];
 export type UpdateMaintenanceRequest = z.infer<typeof updateMaintenanceSchema>["body"];
 export type OpenMaintenanceFromRequest = z.infer<typeof openMaintenanceFromRequestSchema>["body"];
@@ -197,3 +220,43 @@ export type DiagnosisNotesRequest = z.infer<typeof diagnosisNotesSchema>["body"]
 export type RepairActionLogRequest = z.infer<typeof repairActionLogSchema>["body"];
 export type HoldMaintenanceRequest = z.infer<typeof holdMaintenanceSchema>["body"];
 export type CompleteMaintenanceRequest = z.infer<typeof completeMaintenanceSchema>["body"];
+export type MaintenanceStatusValue = (typeof maintenanceStatuses)[number];
+export type TechnicianScorecardSummaryQuery = z.infer<
+  typeof technicianScorecardSummarySchema
+>["query"];
+
+export interface MaintenanceStatusCount {
+  status: MaintenanceStatusValue;
+  count: number;
+}
+
+export interface TechnicianWorkloadCountRow {
+  technician: string;
+  total: number;
+  counts: MaintenanceStatusCount[];
+}
+
+export interface TechnicianWorkloadSummary {
+  technician: Record<string, unknown>;
+  totalJobs: number;
+  activeJobs: number;
+  completedJobs: number;
+  statusBreakdown: MaintenanceStatusCount[];
+}
+
+export interface TechnicianScorecardSummary {
+  technician: Record<string, unknown>;
+  dateRange: {
+    from?: string;
+    to?: string;
+  };
+  totalJobs: number;
+  activeJobs: number;
+  completedJobs: number;
+  completionRate: number;
+  repairActions: number;
+  completedRepairActions: number;
+  repairActionCompletionRate: number;
+  lastCompletedAt: Date | null;
+  statusBreakdown: MaintenanceStatusCount[];
+}

@@ -1,8 +1,12 @@
 import { Maintenance, MaintenanceModel } from "../models/maintenanceModel";
-import { FilterQuery, UpdateQuery } from "mongoose";
+import { FilterQuery, Types, UpdateQuery } from "mongoose";
 import { ParsedQueryOptions } from "../helpers/queryBuilder";
 import { sanitizeSelect } from "../helpers/common";
-import { CreateMaintenanceRequest, UpdateMaintenanceRequest } from "../types/maintenance";
+import {
+  CreateMaintenanceRequest,
+  TechnicianWorkloadCountRow,
+  UpdateMaintenanceRequest,
+} from "../types/maintenance";
 
 // Purpose: This file is responsible for handling all the database operations related to the maintenance model.
 export class MaintenanceRepository {
@@ -46,6 +50,56 @@ export class MaintenanceRepository {
     }
 
     return query.exec();
+  }
+
+  async getMaintenancesByFilter(
+    filter: FilterQuery<MaintenanceModel>,
+  ): Promise<MaintenanceModel[]> {
+    return Maintenance.find(filter).select("-password").exec();
+  }
+
+  async getTechnicianStatusCounts(technicianIds: string[]): Promise<TechnicianWorkloadCountRow[]> {
+    if (technicianIds.length === 0) return [];
+
+    const technicianObjectIds = technicianIds.map((id) => new Types.ObjectId(id));
+    const workloads = await Maintenance.aggregate<{
+      _id: Types.ObjectId;
+      total: number;
+      counts: { status: MaintenanceModel["status"]; count: number }[];
+    }>([
+      {
+        $match: {
+          "assignment.technician": { $in: technicianObjectIds },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            technician: "$assignment.technician",
+            status: "$status",
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.technician",
+          total: { $sum: "$count" },
+          counts: {
+            $push: {
+              status: "$_id.status",
+              count: "$count",
+            },
+          },
+        },
+      },
+    ]).exec();
+
+    return workloads.map((workload) => ({
+      technician: workload._id.toString(),
+      total: workload.total,
+      counts: workload.counts,
+    }));
   }
 
   async createMaintenance(data: CreateMaintenanceRequest): Promise<MaintenanceModel> {
