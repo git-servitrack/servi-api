@@ -23,7 +23,11 @@ export class UserController {
   @route.get("/:id")
   @UseMiddleware(authenticate)
   @UseMiddleware(authorize(["admin", "head_technician"]))
-  async getUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getUser(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const queryOptions: QueryOptions = {
         fields: req.query.fields as string,
@@ -40,7 +44,11 @@ export class UserController {
   @route.get("/")
   @UseMiddleware(authenticate)
   @UseMiddleware(authorize(["admin", "head_technician"]))
-  async getUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async getUsers(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       const queryOptions: QueryOptions = {
         fields: req.query.fields as string,
@@ -106,12 +114,21 @@ export class UserController {
 
   @route.post("/upload-image/:id")
   @UseMiddleware(upload.single("image"))
-  async uploadImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async uploadImage(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
     try {
       if (!req.file) throw new AppError("Please upload an image", 400);
 
-      const imageUrl = await this.cloudinary.uploadImage(req.file);
-      const user = await this.userService.updateUser({ _id: req.params.id, avatar: imageUrl });
+      const image = await this.cloudinary.uploadImage(req.file, {
+        folderPath: ["user-avatars", req.params.id],
+      });
+      const user = await this.userService.updateUser({
+        _id: req.params.id,
+        avatar: image.secureUrl,
+      });
       sendSuccess(res, "User image uploaded successfully", user);
     } catch (error) {
       next(error);
