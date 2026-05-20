@@ -8,6 +8,7 @@ import { CategoryController } from "../controllers/categoryController";
 import { ServiceRequestController } from "../controllers/serviceRequestController";
 import { MaintenanceController } from "../controllers/maintenanceController";
 import { SparePartController } from "../controllers/sparePartController";
+import { DocumentationController } from "../controllers/documentationController";
 
 // Extract all routes from the controllers.
 export const routes = extract(
@@ -19,4 +20,5 @@ export const routes = extract(
   ServiceRequestController,
   MaintenanceController,
   SparePartController,
+  DocumentationController,
 );
