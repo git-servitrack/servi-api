@@ -214,34 +214,69 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ## PHASE 9 - Intelligence Integration
 
-### Damage Detection Integration
+### Damage Detection - Teachable Machine TensorFlow.js
 
-- [ ] Define damage detection request contract
-- [ ] Define damage detection result schema
-- [ ] Create intelligence integration repository
-- [ ] Create intelligence integration service
-- [ ] Create intelligence controller
-- [ ] Create intelligence routes
-- [ ] Add endpoint to submit image for analysis
+- [ ] Add TensorFlow.js runtime dependency for API-side inference
+- [ ] Define local model storage path for downloaded Teachable Machine files
+- [ ] Store downloaded `model.json`, `metadata.json`, and weights files under the API model assets folder
+- [ ] Add environment/config support for selecting the active damage detection model path
+- [ ] Create damage detection request contract
+- [ ] Create damage detection result schema
+- [ ] Store model name, model version, and analyzed media file reference
+- [ ] Create damage detection repository
+- [ ] Create damage detection service
+- [ ] Create damage detection controller
+- [ ] Create damage detection routes
+- [ ] Load Teachable Machine model with TensorFlow.js
+- [ ] Read class labels from Teachable Machine metadata
+- [ ] Preprocess uploaded/documentation image for model input
+- [ ] Add endpoint to analyze an existing documentation media file
+- [ ] Add endpoint to upload and analyze an image in one request if needed
+- [ ] Return top prediction label
+- [ ] Return all class confidence scores
+- [ ] Map detected labels to severity level
 - [ ] Store severity level
 - [ ] Store confidence score
 - [ ] Store detected damage labels
 - [ ] Store suggested maintenance action
+- [ ] Link detection result to asset, service request, maintenance job, and media file when available
+- [ ] Add minimum confidence threshold handling
+- [ ] Add fallback result when model confidence is too low
 
-### Predictive Maintenance Integration
+### Predictive Maintenance - Decision Tree Model
 
 - [ ] Define predictive maintenance request contract
-- [ ] Define result schema for failure forecast
-- [ ] Add endpoint to trigger prediction
+- [ ] Define decision tree feature contract
+- [ ] Define result schema for maintenance forecast
+- [ ] Create predictive maintenance repository
+- [ ] Create predictive maintenance service
+- [ ] Create predictive maintenance controller
+- [ ] Create predictive maintenance routes
+- [ ] Define decision tree input features from asset condition, criticality, service age, request priority, request frequency, repair history, and parts usage
+- [ ] Create feature extraction helper from existing asset, service request, maintenance, and spare parts data
+- [ ] Define initial decision tree rules for maintenance risk scoring
+- [ ] Add model version field for decision tree rule revisions
+- [ ] Add endpoint to trigger prediction for one asset
+- [ ] Add endpoint to trigger prediction for multiple assets if needed
 - [ ] Store risk level
+- [ ] Store risk score
+- [ ] Store predicted failure likelihood
 - [ ] Store next maintenance recommendation
-- [ ] Store forecast explanation metadata if available
+- [ ] Store recommended maintenance window
+- [ ] Store forecast explanation metadata
+- [ ] Store feature snapshot used for the prediction
+- [ ] Link prediction result to asset and latest related maintenance context
 
-### Integration Safety
+### Intelligence Safety and Operations
 
-- [ ] Add timeout handling
-- [ ] Add failure fallback logic
+- [ ] Add timeout handling for image analysis
+- [ ] Add failure fallback logic for model loading and inference
 - [ ] Add integration error logging
+- [ ] Add model-not-configured error handling
+- [ ] Add invalid or missing media file handling
+- [ ] Add tests for low-confidence detection results
+- [ ] Add tests for decision tree risk branches
+- [ ] Document local model setup steps for downloaded Teachable Machine files
 
 ---
 
