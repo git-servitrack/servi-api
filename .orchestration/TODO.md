@@ -245,27 +245,46 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Predictive Maintenance - Decision Tree Model
 
-- [ ] Define predictive maintenance request contract
-- [ ] Define decision tree feature contract
-- [ ] Define result schema for maintenance forecast
-- [ ] Create predictive maintenance repository
-- [ ] Create predictive maintenance service
-- [ ] Create predictive maintenance controller
-- [ ] Create predictive maintenance routes
+- [x] Add `ml-cart` dependency for TypeScript decision tree training and inference
+- [x] Add `@types/ml-cart` if available, or create a local type declaration if needed
+- [x] Use `data/KAGGLE_DATA.csv` as the primary decision-tree training dataset
+- [x] Use `Target` from `data/KAGGLE_DATA.csv` as the binary machine-failure prediction label
+- [x] Use `Failure Type` from `data/KAGGLE_DATA.csv` as the failure classification label
+- [x] Map Kaggle feature columns: `Type`, `Air temperature [K]`, `Process temperature [K]`, `Rotational speed [rpm]`, `Torque [Nm]`, and `Tool wear [min]`
+- [x] Handle class imbalance because `data/KAGGLE_DATA.csv` has many more no-failure rows than failure rows
+- [x] Split `data/KAGGLE_DATA.csv` into training and validation sets
+- [ ] Use `data/SAMPLE DATA.csv` as the local maintenance-history mapping dataset
+- [ ] Use `data/CONCRETE.csv` as an asset catalog/reference dataset, not as the main prediction dataset
+- [x] Define accepted CSV columns for predictive maintenance imports
+- [x] Remove blank rows, section-label rows, and incomplete maintenance records from imported CSV data
+- [x] Create CSV parser helper for predictive maintenance datasets
+- [ ] Map Kaggle model features into SERVI asset and maintenance fields where possible
+- [x] Define target label strategy for prediction, such as risk level, failure likelihood, or maintenance urgency
+- [x] Document `data/KAGGLE_DATA.csv` source and expected columns
+- [x] Define predictive maintenance request contract
+- [x] Define decision tree feature contract
+- [x] Define result schema for maintenance forecast
+- [x] Create predictive maintenance repository
+- [x] Create predictive maintenance service
+- [x] Create predictive maintenance controller
+- [x] Create predictive maintenance routes
+- [x] Create `ml-cart` decision tree training helper
+- [x] Create `ml-cart` decision tree prediction helper
+- [x] Add model serialization and loading strategy for trained decision tree JSON
 - [ ] Define decision tree input features from asset condition, criticality, service age, request priority, request frequency, repair history, and parts usage
 - [ ] Create feature extraction helper from existing asset, service request, maintenance, and spare parts data
-- [ ] Define initial decision tree rules for maintenance risk scoring
-- [ ] Add model version field for decision tree rule revisions
-- [ ] Add endpoint to trigger prediction for one asset
+- [x] Define initial decision tree rules for maintenance risk scoring
+- [x] Add model version field for decision tree rule revisions
+- [x] Add endpoint to trigger prediction for one asset
 - [ ] Add endpoint to trigger prediction for multiple assets if needed
-- [ ] Store risk level
-- [ ] Store risk score
-- [ ] Store predicted failure likelihood
-- [ ] Store next maintenance recommendation
-- [ ] Store recommended maintenance window
-- [ ] Store forecast explanation metadata
-- [ ] Store feature snapshot used for the prediction
-- [ ] Link prediction result to asset and latest related maintenance context
+- [x] Store risk level
+- [x] Store risk score
+- [x] Store predicted failure likelihood
+- [x] Store next maintenance recommendation
+- [x] Store recommended maintenance window
+- [x] Store forecast explanation metadata
+- [x] Store feature snapshot used for the prediction
+- [x] Link prediction result to asset and latest related maintenance context
 
 ### Intelligence Safety and Operations
 
