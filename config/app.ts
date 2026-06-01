@@ -8,12 +8,24 @@ import { routes } from "../routes";
 import { errorHandler, notFound } from "../middleware/errorHandler";
 import { requestLogger } from "../middleware/requestLogger";
 
+const normalizeOrigin = (origin: string) => origin.replace(/\/+$/, "");
+
+const parseCorsOrigins = (value: string) =>
+  value
+    .split(",")
+    .map((origin) => normalizeOrigin(origin.trim()))
+    .filter(Boolean);
+
 export const createApp = (): express.Application => {
   const app = express();
 
   app.disable("x-powered-by");
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN }));
+  app.use(
+    cors({
+      origin: env.CORS_ORIGIN === "*" ? true : parseCorsOrigins(env.CORS_ORIGIN),
+    }),
+  );
   app.use(requestLogger);
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
