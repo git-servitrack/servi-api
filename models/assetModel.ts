@@ -5,14 +5,19 @@ export interface AssetModel {
   name: string;
   code?: string;
   category: mongoose.Schema.Types.ObjectId | string;
+  assetType?: string;
   site: string;
   assignedTeam: string;
-  status: "Operational" | "Maintenance Due" | "Under Repair" | "Decommissioned";
+  status: "Active" | "Operational" | "Maintenance Due" | "Under Repair" | "Decommissioned";
   criticality: "Critical" | "High" | "Medium" | "Low";
   condition?: string;
   manufacturer: string;
   model: string;
   serialNumber: string;
+  quantity?: number;
+  unitOfMeasure?: string;
+  supplier?: string;
+  acquisitionDate?: Date;
   lastServiceDate?: Date;
   nextServiceDate?: Date;
   notes?: string;
@@ -33,6 +38,9 @@ const AssetSchema = new mongoose.Schema<AssetModel>(
       ref: "Category",
       required: true,
     },
+    assetType: {
+      type: String,
+    },
     site: {
       type: String,
       required: true,
@@ -43,7 +51,7 @@ const AssetSchema = new mongoose.Schema<AssetModel>(
     },
     status: {
       type: String,
-      enum: ["Operational", "Maintenance Due", "Under Repair", "Decommissioned"],
+      enum: ["Active", "Operational", "Maintenance Due", "Under Repair", "Decommissioned"],
       required: true,
     },
     criticality: {
@@ -66,6 +74,19 @@ const AssetSchema = new mongoose.Schema<AssetModel>(
       type: String,
       required: true,
       unique: true,
+    },
+    quantity: {
+      type: Number,
+      min: 0,
+    },
+    unitOfMeasure: {
+      type: String,
+    },
+    supplier: {
+      type: String,
+    },
+    acquisitionDate: {
+      type: Date,
     },
     lastServiceDate: {
       type: Date,
