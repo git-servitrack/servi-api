@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { route } from "express-extract-routes";
+import { UserRole } from "../config/constants";
 import { QueryBuilder, QueryOptions } from "../helpers/queryBuilder";
 import { sendSuccess } from "../helpers/response";
 import { authenticate, authorize } from "../middleware/auth";
@@ -23,6 +24,15 @@ import {
   updateMaintenanceSchema,
 } from "../types/maintenance";
 
+const maintenanceReadRoles: UserRole[] = [
+  "admin",
+  "head_technician",
+  "technician",
+  "project_site_staff",
+  "warehouse_staff",
+  "management",
+];
+
 // Purpose: This controller class is responsible for handling the maintenance related requests.
 @route("/maintenance")
 export class MaintenanceController {
@@ -34,7 +44,7 @@ export class MaintenanceController {
 
   @route.get("/history")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(maintenanceReadRoles))
   @UseMiddleware(validate(maintenanceHistorySchema))
   async getMaintenanceHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -56,7 +66,7 @@ export class MaintenanceController {
 
   @route.get("/history/asset/:assetId")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(maintenanceReadRoles))
   @UseMiddleware(validate(assetMaintenanceHistorySchema))
   async getAssetMaintenanceHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -81,7 +91,7 @@ export class MaintenanceController {
 
   @route.get("/history/technician/:technicianId")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(["admin", "head_technician", "technician"]))
   @UseMiddleware(validate(technicianMaintenanceHistorySchema))
   async getTechnicianMaintenanceHistory(
     req: Request,
@@ -110,7 +120,7 @@ export class MaintenanceController {
 
   @route.get("/technicians/workloads")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(["admin", "head_technician", "technician"]))
   @UseMiddleware(validate(technicianWorkloadSchema))
   async getTechnicianWorkloads(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -132,7 +142,7 @@ export class MaintenanceController {
 
   @route.get("/technicians/:technicianId/scorecard")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(["admin", "head_technician", "technician"]))
   @UseMiddleware(validate(technicianScorecardSummarySchema))
   async getTechnicianScorecardSummary(
     req: Request,
@@ -152,7 +162,7 @@ export class MaintenanceController {
 
   @route.get("/:id")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(maintenanceReadRoles))
   async getMaintenance(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const queryOptions: QueryOptions = {
@@ -172,7 +182,7 @@ export class MaintenanceController {
 
   @route.get("/")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(maintenanceReadRoles))
   async getMaintenances(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const queryOptions: QueryOptions = {
@@ -193,6 +203,7 @@ export class MaintenanceController {
 
   @route.post("/from-request")
   @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(["admin", "head_technician"]))
   @UseMiddleware(validate(openMaintenanceFromRequestSchema))
   async openFromRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -205,6 +216,7 @@ export class MaintenanceController {
 
   @route.post("/")
   @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(["admin", "head_technician"]))
   @UseMiddleware(validate(createMaintenanceSchema))
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

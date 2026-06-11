@@ -216,32 +216,32 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Damage Detection - Teachable Machine TensorFlow.js
 
-- [ ] Add TensorFlow.js runtime dependency for API-side inference
-- [ ] Define local model storage path for downloaded Teachable Machine files
-- [ ] Store downloaded `model.json`, `metadata.json`, and weights files under the API model assets folder
-- [ ] Add environment/config support for selecting the active damage detection model path
-- [ ] Create damage detection request contract
-- [ ] Create damage detection result schema
-- [ ] Store model name, model version, and analyzed media file reference
-- [ ] Create damage detection repository
-- [ ] Create damage detection service
-- [ ] Create damage detection controller
-- [ ] Create damage detection routes
-- [ ] Load Teachable Machine model with TensorFlow.js
-- [ ] Read class labels from Teachable Machine metadata
-- [ ] Preprocess uploaded/documentation image for model input
-- [ ] Add endpoint to analyze an existing documentation media file
-- [ ] Add endpoint to upload and analyze an image in one request if needed
-- [ ] Return top prediction label
-- [ ] Return all class confidence scores
-- [ ] Map detected labels to severity level
-- [ ] Store severity level
-- [ ] Store confidence score
-- [ ] Store detected damage labels
-- [ ] Store suggested maintenance action
-- [ ] Link detection result to asset, service request, maintenance job, and media file when available
-- [ ] Add minimum confidence threshold handling
-- [ ] Add fallback result when model confidence is too low
+- [x] Add TensorFlow.js runtime dependency for API-side inference
+- [x] Define local model storage path for downloaded Teachable Machine files
+- [x] Store downloaded `model.json`, `metadata.json`, and weights files under the API model assets folder
+- [x] Add environment/config support for selecting the active damage detection model path
+- [x] Create damage detection request contract
+- [x] Create damage detection result schema
+- [x] Store model name, model version, and analyzed media file reference
+- [x] Create damage detection repository
+- [x] Create damage detection service
+- [x] Create damage detection controller
+- [x] Create damage detection routes
+- [x] Load Teachable Machine model with TensorFlow.js
+- [x] Read class labels from Teachable Machine metadata
+- [x] Preprocess uploaded/documentation image for model input
+- [x] Add endpoint to analyze an existing documentation media file
+- [x] Add endpoint to upload and analyze an image in one request if needed
+- [x] Return top prediction label
+- [x] Return all class confidence scores
+- [x] Map detected labels to severity level
+- [x] Store severity level
+- [x] Store confidence score
+- [x] Store detected damage labels
+- [x] Store suggested maintenance action
+- [x] Link detection result to asset, service request, maintenance job, and media file when available
+- [x] Add minimum confidence threshold handling
+- [x] Add fallback result when model confidence is too low
 
 ### Predictive Maintenance - Decision Tree Model
 
@@ -288,11 +288,11 @@ This file tracks the recommended implementation sequence for SERVI-API.
 
 ### Intelligence Safety and Operations
 
-- [ ] Add timeout handling for image analysis
-- [ ] Add failure fallback logic for model loading and inference
-- [ ] Add integration error logging
-- [ ] Add model-not-configured error handling
-- [ ] Add invalid or missing media file handling
+- [x] Add timeout handling for image analysis
+- [x] Add failure fallback logic for model loading and inference
+- [x] Add integration error logging
+- [x] Add model-not-configured error handling
+- [x] Add invalid or missing media file handling
 - [ ] Add tests for low-confidence detection results
 - [ ] Add tests for decision tree risk branches
 - [ ] Document local model setup steps for downloaded Teachable Machine files

@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { route } from "express-extract-routes";
+import { UserRole } from "../config/constants";
 import { QueryBuilder, QueryOptions } from "../helpers/queryBuilder";
 import { sendSuccess } from "../helpers/response";
 import { authenticate, authorize } from "../middleware/auth";
@@ -7,6 +8,15 @@ import { UseMiddleware } from "../middleware/useMiddleware";
 import { validate } from "../middleware/validate";
 import { ServiceRequestService } from "../services/serviceRequestService";
 import { createServiceRequestSchema, updateServiceRequestSchema } from "../types/serviceRequest";
+
+const serviceRequestReadRoles: UserRole[] = [
+  "admin",
+  "head_technician",
+  "technician",
+  "project_site_staff",
+  "warehouse_staff",
+  "management",
+];
 
 // Purpose: This controller class is responsible for handling the service request related requests.
 @route("/service-requests")
@@ -19,7 +29,7 @@ export class ServiceRequestController {
 
   @route.get("/:id")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(serviceRequestReadRoles))
   async getServiceRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const queryOptions: QueryOptions = {
@@ -39,7 +49,7 @@ export class ServiceRequestController {
 
   @route.get("/")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(serviceRequestReadRoles))
   async getServiceRequests(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const queryOptions: QueryOptions = {

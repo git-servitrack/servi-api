@@ -15,6 +15,7 @@ import { DocumentationService } from "../services/documentationService";
 import {
   documentationIdSchema,
   documentationListSchema,
+  updateMediaFileStatusSchema,
   uploadMediaFileSchema,
 } from "../types/documentation";
 
@@ -135,6 +136,29 @@ export class DocumentationController {
     try {
       await this.documentationService.deleteMediaFile(req.params.id);
       sendSuccess(res, "Media file deleted successfully", null);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  @route.patch("/:id/status")
+  @UseMiddleware(authenticate)
+  @UseMiddleware(
+    authorize(["admin", "head_technician", "technician", "project_site_staff"]),
+  )
+  @UseMiddleware(validate(updateMediaFileStatusSchema))
+  async updateStatus(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const mediaFile = await this.documentationService.updateMediaFileStatus(
+        req.params.id,
+        req.body,
+        this.getActorId(req),
+      );
+      sendSuccess(res, "Media file status updated successfully", mediaFile);
     } catch (error) {
       next(error);
     }

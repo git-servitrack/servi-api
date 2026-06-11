@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { route } from "express-extract-routes";
+import { UserRole } from "../config/constants";
 import { QueryBuilder, QueryOptions } from "../helpers/queryBuilder";
 import { sendSuccess } from "../helpers/response";
 import { authenticate, authorize } from "../middleware/auth";
@@ -7,6 +8,15 @@ import { UseMiddleware } from "../middleware/useMiddleware";
 import { validate } from "../middleware/validate";
 import { AssetService } from "../services/assetService";
 import { createAssetSchema, updateAssetSchema } from "../types/asset";
+
+const assetReadRoles: UserRole[] = [
+  "admin",
+  "head_technician",
+  "technician",
+  "project_site_staff",
+  "warehouse_staff",
+  "management",
+];
 
 // Purpose: This controller class is responsible for handling the asset related requests.
 @route("/asset")
@@ -19,7 +29,7 @@ export class AssetController {
 
   @route.get("/:id")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(assetReadRoles))
   async getAsset(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const queryOptions: QueryOptions = {
@@ -36,7 +46,7 @@ export class AssetController {
 
   @route.get("/")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(assetReadRoles))
   async getAssets(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const queryOptions: QueryOptions = {
@@ -57,6 +67,7 @@ export class AssetController {
 
   @route.post("/")
   @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(["admin", "head_technician"]))
   @UseMiddleware(validate(createAssetSchema))
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -69,6 +80,7 @@ export class AssetController {
 
   @route.put("/")
   @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(["admin", "head_technician"]))
   @UseMiddleware(validate(updateAssetSchema))
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
