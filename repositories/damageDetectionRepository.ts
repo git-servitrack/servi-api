@@ -1,15 +1,18 @@
 import { FilterQuery } from "mongoose";
 import { sanitizeSelect } from "../helpers/common";
 import { ParsedQueryOptions } from "../helpers/queryBuilder";
-import { MediaFile, MediaFileModel } from "../models/mediaFileModel";
+import {
+  DamageDetection,
+  DamageDetectionModel,
+} from "../models/damageDetectionModel";
 
-// Purpose: This file is responsible for handling all database operations related to documentation media files.
-export class DocumentationRepository {
-  async getMediaFile(
+// Purpose: This file is responsible for handling database operations related to damage detection results.
+export class DamageDetectionRepository {
+  async getDetection(
     id: string,
     options?: ParsedQueryOptions,
-  ): Promise<MediaFileModel | null> {
-    let query: any = MediaFile.findById(id);
+  ): Promise<DamageDetectionModel | null> {
+    let query: any = DamageDetection.findById(id);
 
     if (options?.select) {
       const sanitizedSelect = sanitizeSelect(options.select);
@@ -27,8 +30,10 @@ export class DocumentationRepository {
     return query.exec();
   }
 
-  async getMediaFiles(options?: ParsedQueryOptions): Promise<MediaFileModel[]> {
-    let query: any = MediaFile.find(options?.filter || {});
+  async getDetections(
+    options?: ParsedQueryOptions,
+  ): Promise<DamageDetectionModel[]> {
+    let query: any = DamageDetection.find(options?.filter || {});
 
     if (options?.select) {
       const sanitizedSelect = sanitizeSelect(options.select);
@@ -50,29 +55,19 @@ export class DocumentationRepository {
     return query.exec();
   }
 
-  async createMediaFile(
-    data: Partial<MediaFileModel>,
-  ): Promise<MediaFileModel> {
-    return MediaFile.create(data);
+  async createDetection(
+    data: Partial<DamageDetectionModel>,
+  ): Promise<DamageDetectionModel> {
+    return DamageDetection.create(data);
   }
 
-  async updateMediaFile(
-    id: string,
-    data: Partial<MediaFileModel>,
-  ): Promise<MediaFileModel | null> {
-    return MediaFile.findByIdAndUpdate(id, data, {
-      new: true,
-      runValidators: true,
-    }).exec();
+  async deleteDetection(id: string): Promise<DamageDetectionModel | null> {
+    return DamageDetection.findByIdAndDelete(id);
   }
 
-  async deleteMediaFile(id: string): Promise<MediaFileModel | null> {
-    return MediaFile.findByIdAndDelete(id);
-  }
-
-  async searchMediaFile(
-    query: FilterQuery<MediaFileModel>,
-  ): Promise<MediaFileModel | null> {
-    return MediaFile.findOne(query).exec();
+  async searchDetection(
+    query: FilterQuery<DamageDetectionModel>,
+  ): Promise<DamageDetectionModel | null> {
+    return DamageDetection.findOne(query).exec();
   }
 }

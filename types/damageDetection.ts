@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { z } from "zod";
 import {
-  mediaFilePurposes,
   mediaFileRelatedModels,
   mediaFileStatuses,
 } from "../models/mediaFileModel";
@@ -13,7 +12,7 @@ const objectIdSchema = z
     message: "Invalid ObjectId",
   });
 
-const documentationQuerySchema = z.object({
+const damageDetectionQuerySchema = z.object({
   fields: z.string().optional(),
   limit: z.string().optional(),
   sort: z.string().optional(),
@@ -37,11 +36,18 @@ const tagsSchema = z
   )
   .optional();
 
-export const uploadMediaFileSchema = z.object({
+export const analyzeMediaFileSchema = z.object({
+  body: z.object({}),
+  params: z.object({
+    mediaFileId: objectIdSchema,
+  }),
+  query: z.object({}),
+});
+
+export const uploadAnalyzeDamageSchema = z.object({
   body: z.object({
     title: z.string().min(1).optional(),
     summary: z.string().optional(),
-    purpose: z.enum(mediaFilePurposes).default("General"),
     tags: tagsSchema,
     relatedModel: z.enum(mediaFileRelatedModels),
     relatedId: objectIdSchema,
@@ -51,13 +57,13 @@ export const uploadMediaFileSchema = z.object({
   query: z.object({}),
 });
 
-export const documentationListSchema = z.object({
+export const damageDetectionListSchema = z.object({
   body: z.object({}),
   params: z.object({}),
-  query: documentationQuerySchema,
+  query: damageDetectionQuerySchema,
 });
 
-export const documentationIdSchema = z.object({
+export const damageDetectionIdSchema = z.object({
   body: z.object({}),
   params: z.object({
     id: objectIdSchema,
@@ -67,20 +73,3 @@ export const documentationIdSchema = z.object({
     populate: z.string().optional(),
   }),
 });
-
-export const updateMediaFileStatusSchema = z.object({
-  body: z.object({
-    status: z.enum(mediaFileStatuses),
-  }),
-  params: z.object({
-    id: objectIdSchema,
-  }),
-  query: z.object({}),
-});
-
-export type UploadMediaFileRequest = z.infer<
-  typeof uploadMediaFileSchema
->["body"];
-export type UpdateMediaFileStatusRequest = z.infer<
-  typeof updateMediaFileStatusSchema
->["body"];

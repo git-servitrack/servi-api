@@ -2,6 +2,7 @@ import { FilterQuery } from "mongoose";
 import { Cloudinary } from "../helpers/cloudinary";
 import { ParsedQueryOptions } from "../helpers/queryBuilder";
 import { AppError } from "../middleware/errorHandler";
+import { DamageDetectionModel } from "../models/damageDetectionModel";
 import {
   MediaFileModel,
   MediaFileRelatedModel,
@@ -11,7 +12,16 @@ import { DocumentationRepository } from "../repositories/documentationRepository
 import { MaintenanceRepository } from "../repositories/maintenanceRepository";
 import { ServiceRequestRepository } from "../repositories/serviceRequestRepository";
 import { UserRepository } from "../repositories/userRepository";
-import { UploadMediaFileRequest } from "../types/documentation";
+import {
+  UpdateMediaFileStatusRequest,
+  UploadMediaFileRequest,
+} from "../types/documentation";
+import { DamageDetectionService } from "./damageDetectionService";
+
+export interface UploadMediaFileResult {
+  mediaFile: MediaFileModel;
+  damageDetection: DamageDetectionModel | null;
+}
 
 // *Purpose: This service class is responsible for handling documentation media uploads and metadata.
 export class DocumentationService {
@@ -21,6 +31,7 @@ export class DocumentationService {
   private serviceRequestRepository: ServiceRequestRepository;
   private maintenanceRepository: MaintenanceRepository;
   private cloudinary: Cloudinary;
+  private damageDetectionService: DamageDetectionService;
 
   constructor() {
     this.documentationRepository = new DocumentationRepository();
@@ -29,6 +40,7 @@ export class DocumentationService {
     this.serviceRequestRepository = new ServiceRequestRepository();
     this.maintenanceRepository = new MaintenanceRepository();
     this.cloudinary = new Cloudinary();
+    this.damageDetectionService = new DamageDetectionService();
   }
 
   private getRelatedFolder(model: MediaFileRelatedModel): string {
@@ -102,7 +114,7 @@ export class DocumentationService {
     file: Express.Multer.File,
     data: UploadMediaFileRequest,
     actorId: string,
-  ): Promise<MediaFileModel> {
+  ): Promise<UploadMediaFileResult> {
     await this.validateUser(actorId, "Actor not found");
     await this.validateRelatedRecord(data.relatedModel, data.relatedId);
 
@@ -115,7 +127,7 @@ export class DocumentationService {
     ];
     const upload = await this.cloudinary.uploadImage(file, { folderPath });
 
-    return this.documentationRepository.createMediaFile({
+    const mediaFile = await this.documentationRepository.createMediaFile({
       title: data.title || file.originalname,
       fileName: file.originalname,
       originalName: file.originalname,
@@ -135,6 +147,25 @@ export class DocumentationService {
         id: data.relatedId,
       },
     });
+
+    if (data.purpose !== "Damage Photo") {
+      return {
+        mediaFile,
+        damageDetection: null,
+      };
+    }
+
+    const damageDetection =
+      await this.damageDetectionService.analyzeUploadedMediaFile(
+        file,
+        mediaFile,
+        actorId,
+      );
+
+    return {
+      mediaFile,
+      damageDetection,
+    };
   }
 
   async deleteMediaFile(id: string): Promise<MediaFileModel | null> {
@@ -144,6 +175,17 @@ export class DocumentationService {
     await this.cloudinary.deleteImage(mediaFile.publicId);
 
     return this.documentationRepository.deleteMediaFile(id);
+  }
+
+  async updateMediaFileStatus(
+    id: string,
+    data: UpdateMediaFileStatusRequest,
+  ): Promise<MediaFileModel | null> {
+    const mediaFile = await this.documentationRepository.updateMediaFile(id, {
+      status: data.status,
+    });
+    if (!mediaFile) throw new AppError("Media file not found", 404);
+    return mediaFile;
   }
 
   async searchMediaFile(
