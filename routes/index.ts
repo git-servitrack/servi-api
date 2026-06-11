@@ -12,6 +12,7 @@ import { DocumentationController } from "../controllers/documentationController"
 import { PredictiveMaintenanceController } from "../controllers/predictiveMaintenanceController";
 import { DamageDetectionController } from "../controllers/damageDetectionController";
 import { ReportingController } from "../controllers/reportingController";
+import { NotificationController } from "../controllers/notificationController";
 
 // Extract all routes from the controllers.
 export const routes = extract(
@@ -27,4 +28,5 @@ export const routes = extract(
   PredictiveMaintenanceController,
   DamageDetectionController,
   ReportingController,
+  NotificationController,
 );

@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { route } from "express-extract-routes";
+import { UserRole } from "../config/constants";
 import { Cloudinary } from "../helpers/cloudinary";
 import { QueryBuilder, QueryOptions } from "../helpers/queryBuilder";
 import { sendSuccess } from "../helpers/response";
@@ -8,6 +9,8 @@ import { AppError } from "../middleware/errorHandler";
 import { upload } from "../middleware/multer";
 import { UseMiddleware } from "../middleware/useMiddleware";
 import { UserService } from "../services/userService";
+
+const userReadRoles: UserRole[] = ["admin", "head_technician", "technician"];
 
 // Purpose: This controller class is responsible for handling the user related requests.
 @route("/user")
@@ -22,7 +25,7 @@ export class UserController {
 
   @route.get("/:id")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(userReadRoles))
   async getUser(
     req: Request,
     res: Response,
@@ -43,7 +46,7 @@ export class UserController {
 
   @route.get("/")
   @UseMiddleware(authenticate)
-  @UseMiddleware(authorize(["admin", "head_technician"]))
+  @UseMiddleware(authorize(userReadRoles))
   async getUsers(
     req: Request,
     res: Response,

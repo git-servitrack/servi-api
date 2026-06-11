@@ -24,6 +24,7 @@ import {
   UpdateMaintenanceRequest,
   maintenanceStatuses,
 } from "../types/maintenance";
+import { NotificationService } from "./notificationService";
 
 type MaintenanceStatus = MaintenanceModel["status"];
 
@@ -33,12 +34,14 @@ export class MaintenanceService {
   private userRepository: UserRepository;
   private assetRepository: AssetRepository;
   private serviceRequestRepository: ServiceRequestRepository;
+  private notificationService: NotificationService;
 
   constructor() {
     this.maintenanceRepository = new MaintenanceRepository();
     this.userRepository = new UserRepository();
     this.assetRepository = new AssetRepository();
     this.serviceRequestRepository = new ServiceRequestRepository();
+    this.notificationService = new NotificationService();
   }
 
   private readonly validStatusTransitions: Record<MaintenanceStatus, MaintenanceStatus[]> = {
@@ -73,6 +76,22 @@ export class MaintenanceService {
       actor,
       createdAt: new Date(),
     };
+  }
+
+  private async notifyAssignedTechnician(
+    maintenance: MaintenanceModel,
+    title: string,
+    message: string,
+  ): Promise<void> {
+    await this.notificationService.notifyUser({
+      recipient: String(maintenance.assignment.technician),
+      title,
+      message,
+      type: "Maintenance",
+      relatedModel: "Maintenance",
+      relatedId: maintenance._id.toString(),
+      link: `/maintenance/${maintenance._id.toString()}`,
+    });
   }
 
   private serializeDocument(document: unknown): Record<string, unknown> {
@@ -172,6 +191,12 @@ export class MaintenanceService {
     );
     await this.assetRepository.searchAndUpdate({ _id: data.asset }, { status: "Under Repair" });
 
+    await this.notifyAssignedTechnician(
+      maintenance,
+      "Maintenance job assigned",
+      `${maintenance.workOrder} was assigned to you.`,
+    );
+
     return maintenance;
   }
 
@@ -233,6 +258,26 @@ export class MaintenanceService {
 
     const maintenance = await this.maintenanceRepository.updateMaintenance(data._id, data);
     if (!maintenance) throw new AppError("Maintenance not found", 404);
+
+    if (data.status && data.status !== existingMaintenance.status) {
+      await this.notifyAssignedTechnician(
+        maintenance,
+        "Maintenance status updated",
+        `${maintenance.workOrder} moved to ${maintenance.status}.`,
+      );
+    }
+
+    if (
+      data.assignment?.technician &&
+      String(data.assignment.technician) !== String(existingMaintenance.assignment.technician)
+    ) {
+      await this.notifyAssignedTechnician(
+        maintenance,
+        "Maintenance reassigned",
+        `${maintenance.workOrder} was reassigned to you.`,
+      );
+    }
+
     return maintenance;
   }
 
@@ -250,7 +295,7 @@ export class MaintenanceService {
     if (maintenance.status === "Completed")
       throw new AppError("Completed job cannot be assigned", 400);
 
-    return this.maintenanceRepository.updateMaintenanceQuery(id, {
+    const updatedMaintenance = await this.maintenanceRepository.updateMaintenanceQuery(id, {
       assignment: data,
       status: "Assigned",
       $push: {
@@ -261,6 +306,16 @@ export class MaintenanceService {
         ),
       },
     });
+
+    if (updatedMaintenance) {
+      await this.notifyAssignedTechnician(
+        updatedMaintenance,
+        "Maintenance job assigned",
+        `${updatedMaintenance.workOrder} was assigned to you.`,
+      );
+    }
+
+    return updatedMaintenance;
   }
 
   async startMaintenance(
@@ -272,7 +327,7 @@ export class MaintenanceService {
 
     this.validateStatusTransition(maintenance.status, "Diagnosing");
 
-    return this.maintenanceRepository.updateMaintenanceQuery(id, {
+    const updatedMaintenance = await this.maintenanceRepository.updateMaintenanceQuery(id, {
       status: "Diagnosing",
       $push: {
         timeline: this.buildTimeline(
@@ -282,6 +337,16 @@ export class MaintenanceService {
         ),
       },
     });
+
+    if (updatedMaintenance) {
+      await this.notifyAssignedTechnician(
+        updatedMaintenance,
+        "Maintenance started",
+        `${updatedMaintenance.workOrder} moved to diagnosing.`,
+      );
+    }
+
+    return updatedMaintenance;
   }
 
   async addDiagnosisNotes(
@@ -332,12 +397,22 @@ export class MaintenanceService {
 
     this.validateStatusTransition(maintenance.status, "On Hold");
 
-    return this.maintenanceRepository.updateMaintenanceQuery(id, {
+    const updatedMaintenance = await this.maintenanceRepository.updateMaintenanceQuery(id, {
       status: "On Hold",
       $push: {
         timeline: this.buildTimeline("Maintenance put on hold", data.reason, data.actor),
       },
     });
+
+    if (updatedMaintenance) {
+      await this.notifyAssignedTechnician(
+        updatedMaintenance,
+        "Maintenance put on hold",
+        `${updatedMaintenance.workOrder} was put on hold.`,
+      );
+    }
+
+    return updatedMaintenance;
   }
 
   async completeMaintenance(
@@ -370,6 +445,14 @@ export class MaintenanceService {
       { _id: maintenance.asset },
       { status: "Operational", lastServiceDate: new Date() },
     );
+
+    if (completedMaintenance) {
+      await this.notifyAssignedTechnician(
+        completedMaintenance,
+        "Maintenance completed",
+        `${completedMaintenance.workOrder} has been completed.`,
+      );
+    }
 
     return completedMaintenance;
   }

@@ -21,6 +21,7 @@ import {
   StockStatus,
   UpdateSparePartRequest,
 } from "../types/sparePart";
+import { NotificationService } from "./notificationService";
 
 type StockOperationResult = {
   sparePart: SparePartModel;
@@ -42,6 +43,7 @@ export class SparePartService {
   private assetRepository: AssetRepository;
   private maintenanceRepository: MaintenanceRepository;
   private userRepository: UserRepository;
+  private notificationService: NotificationService;
 
   constructor() {
     this.sparePartRepository = new SparePartRepository();
@@ -51,6 +53,7 @@ export class SparePartService {
     this.assetRepository = new AssetRepository();
     this.maintenanceRepository = new MaintenanceRepository();
     this.userRepository = new UserRepository();
+    this.notificationService = new NotificationService();
   }
 
   private getAvailableStock(sparePart: SparePartModel): number {
@@ -115,6 +118,19 @@ export class SparePartService {
     return updatedSparePart;
   }
 
+  private async notifyLowStock(sparePart: SparePartModel): Promise<void> {
+    if (!["Low Stock", "Critical", "Out of Stock"].includes(sparePart.status)) return;
+
+    await this.notificationService.notifyRoles(["admin", "head_technician", "warehouse_staff"], {
+      title: `Spare part ${sparePart.status}`,
+      message: `${sparePart.name} is now ${sparePart.status}. Stock on hand: ${sparePart.stockOnHand}.`,
+      type: "Spare Parts",
+      relatedModel: "SparePart",
+      relatedId: sparePart._id.toString(),
+      link: `/spare-parts/${sparePart._id.toString()}`,
+    });
+  }
+
   async getSparePart(id: string, options?: ParsedQueryOptions): Promise<SparePartModel | null> {
     const sparePart = await this.sparePartRepository.getSparePart(id, options);
     if (!sparePart) throw new AppError("Spare part not found", 404);
@@ -156,6 +172,8 @@ export class SparePartService {
       createdBy: actorId,
     });
 
+    await this.notifyLowStock(sparePart);
+
     return { sparePart, movement };
   }
 
@@ -181,6 +199,7 @@ export class SparePartService {
       status: this.calculateStatus(stockOnHand, reservedStock, reorderPoint),
     });
     if (!updatedSparePart) throw new AppError("Spare part not found", 404);
+    await this.notifyLowStock(updatedSparePart);
     return updatedSparePart;
   }
 
@@ -205,6 +224,8 @@ export class SparePartService {
       note: data.note,
       createdBy: actorId,
     });
+
+    await this.notifyLowStock(updatedSparePart);
 
     return { sparePart: updatedSparePart, movement };
   }
@@ -236,6 +257,8 @@ export class SparePartService {
       createdBy: actorId,
     });
 
+    await this.notifyLowStock(updatedSparePart);
+
     return { sparePart: updatedSparePart, movement };
   }
 
@@ -263,6 +286,8 @@ export class SparePartService {
       note: data.note,
       createdBy: actorId,
     });
+
+    await this.notifyLowStock(updatedSparePart);
 
     return { sparePart: updatedSparePart, movement };
   }
@@ -293,6 +318,8 @@ export class SparePartService {
       note: data.note,
       createdBy: actorId,
     });
+
+    await this.notifyLowStock(updatedSparePart);
 
     return { sparePart: updatedSparePart, movement };
   }
@@ -350,6 +377,8 @@ export class SparePartService {
       note: data.note || "Part usage recorded for maintenance job",
       createdBy: actorId,
     });
+
+    await this.notifyLowStock(updatedSparePart);
 
     return { sparePart: updatedSparePart, usage, movement };
   }

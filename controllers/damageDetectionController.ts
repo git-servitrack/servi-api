@@ -40,7 +40,7 @@ export class DamageDetectionController {
   @route.post("/media/:mediaFileId/analyze")
   @UseMiddleware(authenticate)
   @UseMiddleware(
-    authorize(["admin", "head_technician", "technician", "management"]),
+    authorize(["admin", "head_technician", "technician", "project_site_staff", "management"]),
   )
   @UseMiddleware(validate(analyzeMediaFileSchema))
   async analyzeMediaFile(
@@ -92,7 +92,7 @@ export class DamageDetectionController {
   @route.get("/:id")
   @UseMiddleware(authenticate)
   @UseMiddleware(
-    authorize(["admin", "head_technician", "technician", "management"]),
+    authorize(["admin", "head_technician", "technician", "project_site_staff", "management"]),
   )
   @UseMiddleware(validate(damageDetectionIdSchema))
   async getDetection(
@@ -119,7 +119,7 @@ export class DamageDetectionController {
   @route.get("/")
   @UseMiddleware(authenticate)
   @UseMiddleware(
-    authorize(["admin", "head_technician", "technician", "management"]),
+    authorize(["admin", "head_technician", "technician", "project_site_staff", "management"]),
   )
   @UseMiddleware(validate(damageDetectionListSchema))
   async getDetections(

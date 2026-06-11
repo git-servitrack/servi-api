@@ -156,6 +156,7 @@ export class DocumentationController {
       const mediaFile = await this.documentationService.updateMediaFileStatus(
         req.params.id,
         req.body,
+        this.getActorId(req),
       );
       sendSuccess(res, "Media file status updated successfully", mediaFile);
     } catch (error) {

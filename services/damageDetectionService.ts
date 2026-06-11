@@ -16,6 +16,7 @@ import { MediaFileModel } from "../models/mediaFileModel";
 import { DamageDetectionRepository } from "../repositories/damageDetectionRepository";
 import { DocumentationRepository } from "../repositories/documentationRepository";
 import { UserRepository } from "../repositories/userRepository";
+import { NotificationService } from "./notificationService";
 
 interface DetectionLinks {
   asset?: string;
@@ -69,12 +70,14 @@ export class DamageDetectionService {
   private documentationRepository: DocumentationRepository;
   private userRepository: UserRepository;
   private damageDetectionModel: TeachableMachineDamageDetectionModel;
+  private notificationService: NotificationService;
 
   constructor() {
     this.damageDetectionRepository = new DamageDetectionRepository();
     this.documentationRepository = new DocumentationRepository();
     this.userRepository = new UserRepository();
     this.damageDetectionModel = new TeachableMachineDamageDetectionModel();
+    this.notificationService = new NotificationService();
   }
 
   private async validateUser(
@@ -203,6 +206,32 @@ export class DamageDetectionService {
     });
   }
 
+  private async notifyDetectionResult(
+    mediaFile: MediaFileModel,
+    detection: DamageDetectionModel,
+    actorId: string,
+  ): Promise<void> {
+    const isFailed = detection.status === "Failed";
+    const isDetected = detection.status === "Detected";
+    await this.notificationService.notifyUser({
+      recipient: actorId,
+      title: isFailed
+        ? "Damage detection failed"
+        : isDetected
+          ? "Damage detected"
+          : "Damage detection completed",
+      message: isFailed
+        ? `AI analysis failed for ${mediaFile.title}. Manual inspection is required.`
+        : `${mediaFile.title}: ${detection.topLabel} (${Math.round(
+            detection.confidenceScore * 100,
+          )}% confidence).`,
+      type: "Damage Detection",
+      relatedModel: "DamageDetection",
+      relatedId: detection._id.toString(),
+      link: "/documentation",
+    });
+  }
+
   async getDetection(
     id: string,
     options?: ParsedQueryOptions,
@@ -229,9 +258,13 @@ export class DamageDetectionService {
     try {
       await this.validateUser(actorId, "Actor not found");
       const result = await this.analyzeBuffer(file.buffer);
-      return this.createSuccessfulDetection(mediaFile, actorId, result);
+      const detection = await this.createSuccessfulDetection(mediaFile, actorId, result);
+      await this.notifyDetectionResult(mediaFile, detection, actorId);
+      return detection;
     } catch (error) {
-      return this.createFailedDetection(mediaFile, actorId, error);
+      const detection = await this.createFailedDetection(mediaFile, actorId, error);
+      await this.notifyDetectionResult(mediaFile, detection, actorId);
+      return detection;
     }
   }
 
@@ -246,9 +279,13 @@ export class DamageDetectionService {
     try {
       const imageBuffer = await this.fetchMediaBuffer(mediaFile);
       const result = await this.analyzeBuffer(imageBuffer);
-      return this.createSuccessfulDetection(mediaFile, actorId, result);
+      const detection = await this.createSuccessfulDetection(mediaFile, actorId, result);
+      await this.notifyDetectionResult(mediaFile, detection, actorId);
+      return detection;
     } catch (error) {
-      return this.createFailedDetection(mediaFile, actorId, error);
+      const detection = await this.createFailedDetection(mediaFile, actorId, error);
+      await this.notifyDetectionResult(mediaFile, detection, actorId);
+      return detection;
     }
   }
 

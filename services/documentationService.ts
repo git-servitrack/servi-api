@@ -17,6 +17,7 @@ import {
   UploadMediaFileRequest,
 } from "../types/documentation";
 import { DamageDetectionService } from "./damageDetectionService";
+import { NotificationService } from "./notificationService";
 
 export interface UploadMediaFileResult {
   mediaFile: MediaFileModel;
@@ -32,6 +33,7 @@ export class DocumentationService {
   private maintenanceRepository: MaintenanceRepository;
   private cloudinary: Cloudinary;
   private damageDetectionService: DamageDetectionService;
+  private notificationService: NotificationService;
 
   constructor() {
     this.documentationRepository = new DocumentationRepository();
@@ -41,6 +43,7 @@ export class DocumentationService {
     this.maintenanceRepository = new MaintenanceRepository();
     this.cloudinary = new Cloudinary();
     this.damageDetectionService = new DamageDetectionService();
+    this.notificationService = new NotificationService();
   }
 
   private getRelatedFolder(model: MediaFileRelatedModel): string {
@@ -180,11 +183,21 @@ export class DocumentationService {
   async updateMediaFileStatus(
     id: string,
     data: UpdateMediaFileStatusRequest,
+    actorId: string,
   ): Promise<MediaFileModel | null> {
     const mediaFile = await this.documentationRepository.updateMediaFile(id, {
       status: data.status,
     });
     if (!mediaFile) throw new AppError("Media file not found", 404);
+    await this.notificationService.notifyUser({
+      recipient: String(mediaFile.uploadedBy || actorId),
+      title: `Documentation ${data.status}`,
+      message: `${mediaFile.title} is now ${data.status}.`,
+      type: "Documentation",
+      relatedModel: "MediaFile",
+      relatedId: mediaFile._id.toString(),
+      link: "/documentation",
+    });
     return mediaFile;
   }
 

@@ -19,8 +19,8 @@ const envSchema = z.object({
   DAMAGE_DETECTION_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
   ACCESS_TOKEN_SECRET: z.string().min(16).default("dev_access_token_secret_please_change"),
   REFRESH_TOKEN_SECRET: z.string().min(16).default("dev_refresh_token_secret_please_change"),
-  ACCESS_TOKEN_EXPIRES_IN: z.string().default("15m"),
-  REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"),
+  ACCESS_TOKEN_EXPIRES_IN: z.string().default("1d"),
+  REFRESH_TOKEN_EXPIRES_IN: z.string().default("1d"),
 });
 
 const parsed = envSchema.safeParse(process.env);
