@@ -115,3 +115,17 @@ export interface ReportingOverview {
   requestVolume: RequestVolumeReportRow[];
   completionRate: CompletionRateReportRow[];
 }
+
+export interface ReportSummary {
+  headline: string;
+  generatedAt: string;
+  periodLabel: string;
+  highlights: string[];
+  recommendations: string[];
+}
+
+export interface ReportExportResult {
+  filename: string;
+  contentType: "text/csv";
+  content: string;
+}
