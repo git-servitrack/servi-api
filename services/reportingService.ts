@@ -1,4 +1,5 @@
 import { AppError } from "../middleware/errorHandler";
+import { buildCsv, buildCsvFilename, CsvSection } from "../helpers/csv";
 import { ReportingRepository } from "../repositories/reportingRepository";
 import {
   CompletionRateReportRow,
@@ -9,6 +10,8 @@ import {
   ReportQuery,
   ReportingFilter,
   ReportingOverview,
+  ReportSummary,
+  ReportExportResult,
   RequestVolumeReportRow,
   SparePartsUsageReportRow,
   TechnicianPerformanceReportRow,
@@ -287,6 +290,172 @@ export class ReportingService {
       highRiskEquipment,
       requestVolume,
       completionRate,
+    };
+  }
+
+  private getMetricValue(metrics: ReportMetric[], label: string, fallback = "0"): string {
+    return metrics.find((metric) => metric.label === label)?.value ?? fallback;
+  }
+
+  private getTopTechnician(rows: TechnicianPerformanceReportRow[]): TechnicianPerformanceReportRow | null {
+    return [...rows].sort(
+      (a, b) => Number(b.completedJobs || 0) - Number(a.completedJobs || 0),
+    )[0] ?? null;
+  }
+
+  private getTopPartUsage(rows: SparePartsUsageReportRow[]): SparePartsUsageReportRow | null {
+    return [...rows].sort(
+      (a, b) => Number.parseInt(b.issuedUnits, 10) - Number.parseInt(a.issuedUnits, 10),
+    )[0] ?? null;
+  }
+
+  private getHighestRisk(rows: HighRiskEquipmentReportRow[]): HighRiskEquipmentReportRow | null {
+    return [...rows].sort(
+      (a, b) => Number(b.riskScore || 0) - Number(a.riskScore || 0),
+    )[0] ?? null;
+  }
+
+  async generateSummary(query: ReportQuery): Promise<ReportSummary> {
+    const overview = await this.getOverview(query);
+    const completed = this.getMetricValue(overview.metrics, "Maintenance completed");
+    const slaRate = this.getMetricValue(overview.metrics, "Average SLA rate");
+    const partsIssued = this.getMetricValue(overview.metrics, "Parts issued");
+    const requestIntake = this.getMetricValue(overview.metrics, "Request intake");
+    const topTechnician = this.getTopTechnician(overview.technicianPerformance);
+    const topPart = this.getTopPartUsage(overview.sparePartsUsage);
+    const highestRisk = this.getHighestRisk(overview.highRiskEquipment);
+    const overdueTeams = overview.completionRate.filter((row) => Number(row.overdue || 0) > 0);
+
+    const highlights = [
+      `${completed} maintenance jobs were completed with an average SLA rate of ${slaRate}.`,
+      `${requestIntake} service requests entered the queue and ${partsIssued} spare-part units were issued.`,
+      topTechnician
+        ? `${topTechnician.technician} led technician output with ${topTechnician.completedJobs} completed jobs.`
+        : "No technician performance rows are available for this filter.",
+      topPart
+        ? `${topPart.part} had the highest recorded part usage at ${topPart.issuedUnits}.`
+        : "No spare-parts usage rows are available for this filter.",
+    ];
+
+    if (highestRisk) {
+      highlights.push(
+        `${highestRisk.asset} is the highest risk equipment item with a ${highestRisk.riskLevel} risk level.`,
+      );
+    }
+
+    const recommendations = [
+      overdueTeams.length > 0
+        ? `Review overdue work for ${overdueTeams.map((row) => row.team).join(", ")}.`
+        : "Maintain current completion controls; no overdue team rows were returned.",
+      highestRisk
+        ? `Prioritize inspection for ${highestRisk.asset}: ${highestRisk.recommendation}.`
+        : "Continue monitoring predictive risk results as new maintenance data arrives.",
+      topPart
+        ? `Check reorder planning for ${topPart.part} because it is the top issued part in this report.`
+        : "Validate spare-part usage once more work orders include part issue logs.",
+    ];
+
+    return {
+      headline: `Reporting summary for ${query.period || "selected period"}`,
+      generatedAt: new Date().toISOString(),
+      periodLabel: query.period || "Custom period",
+      highlights,
+      recommendations,
+    };
+  }
+
+  async exportReportPack(query: ReportQuery): Promise<ReportExportResult> {
+    const overview = await this.getOverview(query);
+    const sections: CsvSection[] = [
+      {
+        title: "Report Metrics",
+        headers: ["Label", "Value", "Hint"],
+        rows: overview.metrics.map((row) => [row.label, row.value, row.hint]),
+      },
+      {
+        title: "Maintenance History",
+        headers: ["Work Order", "Asset", "Site", "Status", "Completed At"],
+        rows: overview.maintenanceHistory.map((row) => [
+          row.workOrder,
+          row.asset,
+          row.site,
+          row.status,
+          row.completedAt,
+        ]),
+      },
+      {
+        title: "Technician Performance",
+        headers: ["Technician", "Team", "Completed Jobs", "Response Time", "SLA Rate"],
+        rows: overview.technicianPerformance.map((row) => [
+          row.technician,
+          row.team,
+          row.completedJobs,
+          row.responseTime,
+          row.slaRate,
+        ]),
+      },
+      {
+        title: "Spare Parts Usage",
+        headers: ["Part", "Category", "Issued Units", "Linked Work Orders", "Site"],
+        rows: overview.sparePartsUsage.map((row) => [
+          row.part,
+          row.category,
+          row.issuedUnits,
+          row.linkedWorkOrders,
+          row.site,
+        ]),
+      },
+      {
+        title: "Downtime",
+        headers: ["Asset", "Site", "Incidents", "Downtime Hours", "Last Downtime At"],
+        rows: overview.downtime.map((row) => [
+          row.asset,
+          row.site,
+          row.incidents,
+          row.downtimeHours,
+          row.lastDowntimeAt,
+        ]),
+      },
+      {
+        title: "High Risk Equipment",
+        headers: ["Asset", "Site", "Risk Level", "Risk Score", "Recommendation", "Forecasted At"],
+        rows: overview.highRiskEquipment.map((row) => [
+          row.asset,
+          row.site,
+          row.riskLevel,
+          row.riskScore,
+          row.recommendation,
+          row.forecastedAt,
+        ]),
+      },
+      {
+        title: "Request Volume",
+        headers: ["Category", "New Requests", "In Progress", "Resolved", "Site"],
+        rows: overview.requestVolume.map((row) => [
+          row.category,
+          row.newRequests,
+          row.inProgress,
+          row.resolved,
+          row.site,
+        ]),
+      },
+      {
+        title: "Completion Rate",
+        headers: ["Team", "Completed", "Overdue", "Completion Rate", "QA Ready"],
+        rows: overview.completionRate.map((row) => [
+          row.team,
+          row.completed,
+          row.overdue,
+          row.completionRate,
+          row.qaReady,
+        ]),
+      },
+    ];
+
+    return {
+      filename: buildCsvFilename("servi-report-pack"),
+      contentType: "text/csv",
+      content: buildCsv(sections),
     };
   }
 }

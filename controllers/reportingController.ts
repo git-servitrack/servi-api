@@ -44,6 +44,34 @@ export class ReportingController {
     }
   }
 
+  @route.get("/export")
+  @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(reportPageRoles))
+  @UseMiddleware(validate(reportQuerySchema))
+  async exportReportPack(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const report = await this.reportingService.exportReportPack(this.getReportQuery(req));
+      res.setHeader("Content-Type", `${report.contentType}; charset=utf-8`);
+      res.setHeader("Content-Disposition", `attachment; filename="${report.filename}"`);
+      res.status(200).send(report.content);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  @route.get("/summary")
+  @UseMiddleware(authenticate)
+  @UseMiddleware(authorize(reportPageRoles))
+  @UseMiddleware(validate(reportQuerySchema))
+  async generateSummary(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const summary = await this.reportingService.generateSummary(this.getReportQuery(req));
+      sendSuccess(res, "Report summary generated successfully", summary);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   @route.get("/metrics")
   @UseMiddleware(authenticate)
   @UseMiddleware(authorize(reportPageRoles))
