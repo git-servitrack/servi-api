@@ -3,9 +3,11 @@ import { buildCsv, buildCsvFilename, CsvSection } from "../helpers/csv";
 import { ReportingRepository } from "../repositories/reportingRepository";
 import {
   CompletionRateReportRow,
+  DamageDetectionReportRow,
   DowntimeReportRow,
   HighRiskEquipmentReportRow,
   MaintenanceHistoryReportRow,
+  MediaFileReportRow,
   ReportMetric,
   ReportQuery,
   ReportingFilter,
@@ -98,6 +100,11 @@ export class ReportingService {
   private formatPercent(value: number): string {
     if (!Number.isFinite(value) || value <= 0) return "0%";
     return `${Math.round(value)}%`;
+  }
+
+  private formatConfidenceScore(value: number): string {
+    if (!Number.isFinite(value) || value <= 0) return "0%";
+    return this.formatPercent(value * 100);
   }
 
   private formatAssetName(name?: string, code?: string): string {
@@ -260,6 +267,50 @@ export class ReportingService {
     }));
   }
 
+  async getMediaFiles(query: ReportQuery): Promise<MediaFileReportRow[]> {
+    const filter = this.buildFilter(query);
+    const rows = await this.reportingRepository.getMediaFiles(filter);
+
+    return rows.map((row) => ({
+      id: String(row._id),
+      title: row.title || "Untitled media file",
+      fileName: row.fileName || "N/A",
+      purpose: row.purpose || "General",
+      relatedTo: row.relatedTo || "N/A",
+      relatedRecord: row.relatedRecord?.trim?.() || "Unassigned record",
+      site: row.site || "Unassigned site",
+      team: row.team || "Unassigned team",
+      status: row.status || "N/A",
+      uploadedAt: this.formatDate(row.uploadedAt),
+      latestDetectionStatus: row.latestDetectionStatus || "Not analyzed",
+      latestDetectionSeverity: row.latestDetectionSeverity || "N/A",
+      latestDetectionLabel: row.latestDetectionLabel || "N/A",
+      url: row.url || "N/A",
+    }));
+  }
+
+  async getDamageDetections(query: ReportQuery): Promise<DamageDetectionReportRow[]> {
+    const filter = this.buildFilter(query);
+    const rows = await this.reportingRepository.getDamageDetections(filter);
+
+    return rows.map((row) => ({
+      id: String(row._id),
+      mediaFile: row.mediaFile || "Unassigned media file",
+      relatedTo: row.relatedTo || "N/A",
+      relatedRecord: row.relatedRecord?.trim?.() || "Unassigned record",
+      site: row.site || "Unassigned site",
+      team: row.team || "Unassigned team",
+      status: row.status || "N/A",
+      severityLevel: row.severityLevel || "N/A",
+      topLabel: row.topLabel || "N/A",
+      confidenceScore: this.formatConfidenceScore(Number(row.confidenceScore || 0)),
+      detectedDamageLabels: row.detectedDamageLabels?.join(", ") || "None",
+      suggestedMaintenanceAction: row.suggestedMaintenanceAction || "N/A",
+      analyzedAt: this.formatDate(row.analyzedAt),
+      errorMessage: row.errorMessage || "",
+    }));
+  }
+
   async getOverview(query: ReportQuery): Promise<ReportingOverview> {
     const [
       metrics,
@@ -365,7 +416,11 @@ export class ReportingService {
   }
 
   async exportReportPack(query: ReportQuery): Promise<ReportExportResult> {
-    const overview = await this.getOverview(query);
+    const [overview, mediaFiles, damageDetections] = await Promise.all([
+      this.getOverview(query),
+      this.getMediaFiles(query),
+      this.getDamageDetections(query),
+    ]);
     const sections: CsvSection[] = [
       {
         title: "Report Metrics",
@@ -448,6 +503,72 @@ export class ReportingService {
           row.overdue,
           row.completionRate,
           row.qaReady,
+        ]),
+      },
+      {
+        title: "Media Files",
+        headers: [
+          "Title",
+          "File Name",
+          "Purpose",
+          "Related To",
+          "Related Record",
+          "Site",
+          "Team",
+          "Status",
+          "Uploaded At",
+          "Latest Detection Status",
+          "Latest Detection Severity",
+          "Latest Detection Label",
+          "URL",
+        ],
+        rows: mediaFiles.map((row) => [
+          row.title,
+          row.fileName,
+          row.purpose,
+          row.relatedTo,
+          row.relatedRecord,
+          row.site,
+          row.team,
+          row.status,
+          row.uploadedAt,
+          row.latestDetectionStatus,
+          row.latestDetectionSeverity,
+          row.latestDetectionLabel,
+          row.url,
+        ]),
+      },
+      {
+        title: "Damage Detections",
+        headers: [
+          "Media File",
+          "Related To",
+          "Related Record",
+          "Site",
+          "Team",
+          "Status",
+          "Severity Level",
+          "Top Label",
+          "Confidence Score",
+          "Detected Damage Labels",
+          "Suggested Maintenance Action",
+          "Analyzed At",
+          "Error Message",
+        ],
+        rows: damageDetections.map((row) => [
+          row.mediaFile,
+          row.relatedTo,
+          row.relatedRecord,
+          row.site,
+          row.team,
+          row.status,
+          row.severityLevel,
+          row.topLabel,
+          row.confidenceScore,
+          row.detectedDamageLabels,
+          row.suggestedMaintenanceAction,
+          row.analyzedAt,
+          row.errorMessage,
         ]),
       },
     ];

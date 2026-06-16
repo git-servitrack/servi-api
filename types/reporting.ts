@@ -105,6 +105,40 @@ export interface CompletionRateReportRow {
   qaReady: string;
 }
 
+export interface MediaFileReportRow {
+  id: string;
+  title: string;
+  fileName: string;
+  purpose: string;
+  relatedTo: string;
+  relatedRecord: string;
+  site: string;
+  team: string;
+  status: string;
+  uploadedAt: string;
+  latestDetectionStatus: string;
+  latestDetectionSeverity: string;
+  latestDetectionLabel: string;
+  url: string;
+}
+
+export interface DamageDetectionReportRow {
+  id: string;
+  mediaFile: string;
+  relatedTo: string;
+  relatedRecord: string;
+  site: string;
+  team: string;
+  status: string;
+  severityLevel: string;
+  topLabel: string;
+  confidenceScore: string;
+  detectedDamageLabels: string;
+  suggestedMaintenanceAction: string;
+  analyzedAt: string;
+  errorMessage: string;
+}
+
 export interface ReportingOverview {
   metrics: ReportMetric[];
   maintenanceHistory: MaintenanceHistoryReportRow[];

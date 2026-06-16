@@ -1,6 +1,8 @@
 import { Asset } from "../models/assetModel";
 import { Category } from "../models/categoryModel";
+import { DamageDetection } from "../models/damageDetectionModel";
 import { Maintenance } from "../models/maintenanceModel";
+import { MediaFile } from "../models/mediaFileModel";
 import { PartUsage } from "../models/partUsageModel";
 import { PredictiveMaintenance } from "../models/predictiveMaintenanceModel";
 import { ServiceRequest } from "../models/serviceRequestModel";
@@ -38,6 +40,13 @@ export class ReportingRepository {
     path = "asset.site",
   ): Record<string, unknown> {
     return filter.site ? { [path]: filter.site } : {};
+  }
+
+  private getReportScopeMatch(filter: ReportingFilter): Record<string, unknown> {
+    return {
+      ...(filter.site ? { site: filter.site } : {}),
+      ...(filter.team ? { team: filter.team } : {}),
+    };
   }
 
   async getMaintenanceHistory(filter: ReportingFilter): Promise<any[]> {
@@ -387,6 +396,304 @@ export class ReportingRepository {
     ];
 
     return Maintenance.aggregate(pipeline).exec();
+  }
+
+  async getMediaFiles(filter: ReportingFilter): Promise<any[]> {
+    const pipeline: any[] = [
+      { $match: this.getDateMatch("createdAt", filter) },
+      {
+        $lookup: {
+          from: Asset.collection.name,
+          localField: "relatedTo.id",
+          foreignField: "_id",
+          as: "relatedAsset",
+        },
+      },
+      {
+        $lookup: {
+          from: ServiceRequest.collection.name,
+          localField: "relatedTo.id",
+          foreignField: "_id",
+          as: "relatedServiceRequest",
+        },
+      },
+      {
+        $lookup: {
+          from: Maintenance.collection.name,
+          localField: "relatedTo.id",
+          foreignField: "_id",
+          as: "relatedMaintenance",
+        },
+      },
+      {
+        $lookup: {
+          from: Asset.collection.name,
+          localField: "relatedServiceRequest.asset",
+          foreignField: "_id",
+          as: "serviceRequestAsset",
+        },
+      },
+      {
+        $lookup: {
+          from: Asset.collection.name,
+          localField: "relatedMaintenance.asset",
+          foreignField: "_id",
+          as: "maintenanceAsset",
+        },
+      },
+      {
+        $lookup: {
+          from: DamageDetection.collection.name,
+          let: { mediaFileId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$mediaFile", "$$mediaFileId"] } } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 1 },
+          ],
+          as: "latestDetection",
+        },
+      },
+      {
+        $addFields: {
+          relatedAsset: { $arrayElemAt: ["$relatedAsset", 0] },
+          relatedServiceRequest: { $arrayElemAt: ["$relatedServiceRequest", 0] },
+          relatedMaintenance: { $arrayElemAt: ["$relatedMaintenance", 0] },
+          serviceRequestAsset: { $arrayElemAt: ["$serviceRequestAsset", 0] },
+          maintenanceAsset: { $arrayElemAt: ["$maintenanceAsset", 0] },
+          latestDetection: { $arrayElemAt: ["$latestDetection", 0] },
+        },
+      },
+      {
+        $addFields: {
+          site: {
+            $switch: {
+              branches: [
+                { case: { $eq: ["$relatedTo.model", "Asset"] }, then: "$relatedAsset.site" },
+                {
+                  case: { $eq: ["$relatedTo.model", "ServiceRequest"] },
+                  then: { $ifNull: ["$relatedServiceRequest.site", "$serviceRequestAsset.site"] },
+                },
+                {
+                  case: { $eq: ["$relatedTo.model", "Maintenance"] },
+                  then: "$maintenanceAsset.site",
+                },
+              ],
+              default: "Unassigned site",
+            },
+          },
+          team: {
+            $switch: {
+              branches: [
+                { case: { $eq: ["$relatedTo.model", "Asset"] }, then: "$relatedAsset.assignedTeam" },
+                {
+                  case: { $eq: ["$relatedTo.model", "ServiceRequest"] },
+                  then: "$serviceRequestAsset.assignedTeam",
+                },
+                {
+                  case: { $eq: ["$relatedTo.model", "Maintenance"] },
+                  then: "$relatedMaintenance.assignment.team",
+                },
+              ],
+              default: "Unassigned team",
+            },
+          },
+          relatedRecord: {
+            $switch: {
+              branches: [
+                {
+                  case: { $eq: ["$relatedTo.model", "Asset"] },
+                  then: {
+                    $concat: [
+                      { $ifNull: ["$relatedAsset.name", "Unassigned asset"] },
+                      " ",
+                      { $ifNull: ["$relatedAsset.code", ""] },
+                    ],
+                  },
+                },
+                {
+                  case: { $eq: ["$relatedTo.model", "ServiceRequest"] },
+                  then: "$relatedServiceRequest.title",
+                },
+                {
+                  case: { $eq: ["$relatedTo.model", "Maintenance"] },
+                  then: "$relatedMaintenance.workOrder",
+                },
+              ],
+              default: "Unassigned record",
+            },
+          },
+        },
+      },
+      { $match: this.getReportScopeMatch(filter) },
+      { $sort: { createdAt: -1 } },
+      { $limit: filter.limit },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          fileName: 1,
+          purpose: 1,
+          relatedTo: "$relatedTo.model",
+          relatedRecord: 1,
+          site: { $ifNull: ["$site", "Unassigned site"] },
+          team: { $ifNull: ["$team", "Unassigned team"] },
+          status: 1,
+          uploadedAt: "$createdAt",
+          latestDetectionStatus: "$latestDetection.status",
+          latestDetectionSeverity: "$latestDetection.severityLevel",
+          latestDetectionLabel: "$latestDetection.topLabel",
+          url: 1,
+        },
+      },
+    ];
+
+    return MediaFile.aggregate(pipeline).exec();
+  }
+
+  async getDamageDetections(filter: ReportingFilter): Promise<any[]> {
+    const pipeline: any[] = [
+      { $match: this.getDateMatch("createdAt", filter) },
+      {
+        $lookup: {
+          from: MediaFile.collection.name,
+          localField: "mediaFile",
+          foreignField: "_id",
+          as: "mediaFile",
+        },
+      },
+      { $unwind: { path: "$mediaFile", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: Asset.collection.name,
+          localField: "asset",
+          foreignField: "_id",
+          as: "relatedAsset",
+        },
+      },
+      {
+        $lookup: {
+          from: ServiceRequest.collection.name,
+          localField: "serviceRequest",
+          foreignField: "_id",
+          as: "relatedServiceRequest",
+        },
+      },
+      {
+        $lookup: {
+          from: Maintenance.collection.name,
+          localField: "maintenance",
+          foreignField: "_id",
+          as: "relatedMaintenance",
+        },
+      },
+      {
+        $lookup: {
+          from: Asset.collection.name,
+          localField: "relatedServiceRequest.asset",
+          foreignField: "_id",
+          as: "serviceRequestAsset",
+        },
+      },
+      {
+        $lookup: {
+          from: Asset.collection.name,
+          localField: "relatedMaintenance.asset",
+          foreignField: "_id",
+          as: "maintenanceAsset",
+        },
+      },
+      {
+        $addFields: {
+          relatedAsset: { $arrayElemAt: ["$relatedAsset", 0] },
+          relatedServiceRequest: { $arrayElemAt: ["$relatedServiceRequest", 0] },
+          relatedMaintenance: { $arrayElemAt: ["$relatedMaintenance", 0] },
+          serviceRequestAsset: { $arrayElemAt: ["$serviceRequestAsset", 0] },
+          maintenanceAsset: { $arrayElemAt: ["$maintenanceAsset", 0] },
+        },
+      },
+      {
+        $addFields: {
+          relatedTo: {
+            $switch: {
+              branches: [
+                { case: { $ne: ["$asset", null] }, then: "Asset" },
+                { case: { $ne: ["$serviceRequest", null] }, then: "ServiceRequest" },
+                { case: { $ne: ["$maintenance", null] }, then: "Maintenance" },
+              ],
+              default: "$mediaFile.relatedTo.model",
+            },
+          },
+          site: {
+            $switch: {
+              branches: [
+                { case: { $ne: ["$asset", null] }, then: "$relatedAsset.site" },
+                {
+                  case: { $ne: ["$serviceRequest", null] },
+                  then: { $ifNull: ["$relatedServiceRequest.site", "$serviceRequestAsset.site"] },
+                },
+                { case: { $ne: ["$maintenance", null] }, then: "$maintenanceAsset.site" },
+              ],
+              default: "Unassigned site",
+            },
+          },
+          team: {
+            $switch: {
+              branches: [
+                { case: { $ne: ["$asset", null] }, then: "$relatedAsset.assignedTeam" },
+                { case: { $ne: ["$serviceRequest", null] }, then: "$serviceRequestAsset.assignedTeam" },
+                {
+                  case: { $ne: ["$maintenance", null] },
+                  then: "$relatedMaintenance.assignment.team",
+                },
+              ],
+              default: "Unassigned team",
+            },
+          },
+          relatedRecord: {
+            $switch: {
+              branches: [
+                {
+                  case: { $ne: ["$asset", null] },
+                  then: {
+                    $concat: [
+                      { $ifNull: ["$relatedAsset.name", "Unassigned asset"] },
+                      " ",
+                      { $ifNull: ["$relatedAsset.code", ""] },
+                    ],
+                  },
+                },
+                { case: { $ne: ["$serviceRequest", null] }, then: "$relatedServiceRequest.title" },
+                { case: { $ne: ["$maintenance", null] }, then: "$relatedMaintenance.workOrder" },
+              ],
+              default: "Unassigned record",
+            },
+          },
+        },
+      },
+      { $match: this.getReportScopeMatch(filter) },
+      { $sort: { createdAt: -1 } },
+      { $limit: filter.limit },
+      {
+        $project: {
+          _id: 1,
+          mediaFile: "$mediaFile.title",
+          relatedTo: 1,
+          relatedRecord: 1,
+          site: { $ifNull: ["$site", "Unassigned site"] },
+          team: { $ifNull: ["$team", "Unassigned team"] },
+          status: 1,
+          severityLevel: 1,
+          topLabel: 1,
+          confidenceScore: 1,
+          detectedDamageLabels: 1,
+          suggestedMaintenanceAction: 1,
+          analyzedAt: "$createdAt",
+          errorMessage: 1,
+        },
+      },
+    ];
+
+    return DamageDetection.aggregate(pipeline).exec();
   }
 
   async countCompletedMaintenance(filter: ReportingFilter): Promise<number> {
